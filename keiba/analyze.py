@@ -4,6 +4,7 @@
   → data/keiba/model.json（予想に使う重みと検証結果）
   → 大井競馬_条件別分析.html（条件別の傾向レポート）
   → 大井競馬_予想.html（日付と気温を入れると、その日の有利な枠・脚質・騎手が出るページ）
+  → 大井競馬_条件別分析.docx（同じレポートを Word で）
   → 大井競馬_分析データ.xlsx（条件別の傾向・好成績騎手・全レース結果を Excel で）
 """
 import datetime as dt
@@ -16,11 +17,13 @@ from . import conditions as C
 from . import data as D
 from . import model as M
 from . import outlook as O
+from . import word as W
 from . import xlsx as X
 
 MODEL_JSON = D.DATA / "model.json"
 REPORT = D.ROOT / "大井競馬_条件別分析.html"
 XLSX = D.ROOT / "大井競馬_分析データ.xlsx"
+DOCX = D.ROOT / "大井競馬_条件別分析.docx"
 PREDICTOR = D.ROOT / "大井競馬_予想.html"
 PREDICTOR_TEMPLATE = D.ROOT / "keiba" / "predictor_template.html"
 STYLES = ("逃げ", "先行", "差し", "追込")
@@ -241,6 +244,49 @@ def write_xlsx(result, bt, races, path=XLSX):
     wb.save(path)
 
 
+def write_docx(result, bt, races, path=DOCX):
+    """条件別分析レポートを Word にする。"""
+    doc = W.new_document()
+    W.title(doc, "大井競馬 条件別分析")
+    W.para(doc, f"対象期間 {races[0].date} 〜 {races[-1].date}（{len(races):,} レース）／作成 {dt.date.today()}",
+           muted=True)
+
+    W.heading(doc, "条件の区分")
+    for label, text in (
+        ("四季", "春=3〜5月、夏=6〜8月、秋=9〜11月、冬=12〜2月"),
+        ("明るさ", "発走が日の入りの60分前より早い=昼、日の入り±60分=薄暮、60分後より遅い=ナイター"),
+        ("天候", "東京（気象庁）の日照時間 6時間以上=晴天、2〜6時間=薄日、2時間未満=曇雨"),
+        ("気温", "東京の最高気温 12℃未満=寒い、12〜20℃=涼しい、20〜28℃=暖かい、28℃以上=暑い"),
+        ("A/E", "実際の数 ÷ 頭数から見た期待値。1.00が平均、1.15以上（緑）は有利、0.85以下（赤）は不利"),
+        ("枠・脚質", "内=1〜2枠、中=3〜6枠、外=7〜8枠。脚質は1コーナーの通過順から 逃げ／先行／差し／追込"),
+    ):
+        W.bullet(doc, text, label)
+
+    W.heading(doc, "予想モデルの検証")
+    v, base = bt.get("検証", {}), bt.get("オッズと馬の地力だけで検証", {})
+    W.para(doc, f"古い75%のレースで学習し、新しい25%（{' 〜 '.join(bt.get('検証期間', ['–']))}）で検証した。"
+                "特徴量は前日までのデータだけで作っているので、当日に予想した場合の成績に相当する。")
+    summary = [{"項目": k, "条件込み": v.get(k), "オッズと馬の地力だけ": base.get(k)}
+               for k in ("レース数", "◎勝率", "◎複勝率", "◎単勝回収率", "1番人気の勝率", "対数損失") if k in v]
+    for r in summary:
+        for c in ("条件込み", "オッズと馬の地力だけ"):
+            x = r[c]
+            r[c] = "–" if x is None else f"{x:.1%}" if r["項目"] != "対数損失" and isinstance(x, float) else (
+                f"{x:.3f}" if isinstance(x, float) else str(x))
+    W.table(doc, summary, font_size=9.5)
+    W.table(doc, [{"特徴量": k, "重み": f"{w:+.2f}"} for k, w in bt.get("学習期間の重み", {}).items()], font_size=9.5)
+
+    W.heading(doc, "条件別の傾向")
+    for name, rows in result["条件別の傾向"].items():
+        W.heading(doc, name, level=2)
+        W.table(doc, rows)
+    W.heading(doc, "条件別の好成績騎手")
+    for name, rows in result["条件別の好成績騎手"].items():
+        W.heading(doc, f"{name}別（40騎乗以上・複勝A/E順）", level=2)
+        W.table(doc, rows)
+    doc.save(path)
+
+
 def write_predictor(stats: M.Stats, races, path=PREDICTOR):
     """日付と気温を入れて使う予想ページ。条件別の集計値を埋め込み、計算はブラウザで行う。"""
     jockeys = sorted(k[1] for k, c in stats.c.items()
@@ -272,9 +318,10 @@ def main():
     }, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
     REPORT.write_text(render(result, bt, races), encoding="utf-8")
     write_xlsx(result, bt, races)
+    write_docx(result, bt, races)
     write_predictor(history.s, races)
     v = bt.get("検証", {})
-    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}, {XLSX.name}, {PREDICTOR.name}")
+    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}, {DOCX.name}, {XLSX.name}, {PREDICTOR.name}")
     for k, val in v.items():
         print(f"  {k}: {val:.3f}" if isinstance(val, float) else f"  {k}: {val}")
 

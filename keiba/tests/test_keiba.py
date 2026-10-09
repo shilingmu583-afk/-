@@ -152,6 +152,14 @@ class ModelTest(unittest.TestCase):
         self.assertEqual(wb.sheetnames, ["説明", "条件別の傾向", "好成績騎手", "レース結果"])
         self.assertEqual(wb["レース結果"].max_row, 1 + sum(r.field_size() for r in self.races))
 
+        import docx
+        from keiba.analyze import write_docx
+        path = Path(self.tmp.name) / "a.docx"
+        write_docx(res, bt, self.races, path)
+        d = docx.Document(path)
+        self.assertEqual(d.paragraphs[0].text, "大井競馬 条件別分析")
+        self.assertIn("ナイター", [t.rows[3].cells[0].text for t in d.tables if len(t.rows) > 3])
+
 
 class PredictTest(unittest.TestCase):
     def test_top3_probs(self):

@@ -29,6 +29,7 @@ from . import conditions as C
 from . import data as D
 from . import model as M
 from . import outlook as O
+from . import word as W
 from . import xlsx as X
 
 MARKS = "◎○▲△△"
@@ -150,6 +151,18 @@ def run(date, max_temp, sky_word="晴", sunshine=None, track="良", entries=None
                       **{f"{g}枠 複勝A/E": a for g, a in v["枠 複勝A/E"].items()},
                       **{f"{st} 勝利A/E": a for st, a in v["脚質 勝利A/E"].items()},
                       "好調騎手": "・".join(j["騎手"] for j in v["好調騎手"])})
+    doc = W.new_document()
+    W.title(doc, head.splitlines()[0].lstrip("# "))
+    for line in head.splitlines()[1:]:
+        if line:
+            W.bullet(doc, line.lstrip("- "))
+    W.heading(doc, "この条件の傾向")
+    for line in O.summary_lines(o):
+        L, text = line.split(": ", 1)
+        W.bullet(doc, text, L)
+    W.table(doc, trend)
+    W.para(doc, "A/E: 1.00が平均（1番人気の信頼度は、いつもの1番人気と比べた値）。1.15以上（緑）は有利、0.85以下（赤）は不利。",
+           muted=True)
     xrow = X.table_at(ws, xrow, trend, title="この条件の傾向",
                       note="A/E: 1.00が平均（1番人気の信頼度は、いつもの1番人気と比べた値）。1.15以上（緑）は有利、0.85以下（赤）は不利")
 
@@ -157,6 +170,8 @@ def run(date, max_temp, sky_word="晴", sunshine=None, track="良", entries=None
         rows = predict_race(race, history, w)
         title = f"{race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）"
         xrow = X.table_at(ws, xrow, rows, title=title)
+        W.heading(doc, title)
+        W.table(doc, rows, font_size=9.5)
         out.append(f"\n## {title}\n\n"
                    "| 印 | 馬番 | 馬名 | 騎手 | 脚質 | 勝率 | 3着内率 | 根拠 |\n|---|---|---|---|---|---|---|---|\n")
         for r in rows:
@@ -164,10 +179,11 @@ def run(date, max_temp, sky_word="晴", sunshine=None, track="良", entries=None
                        f"{r['勝率']:.1%} | {r['3着内率']:.0%} | {r['根拠']} |\n")
     text = "".join(out)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    md, xlsx_path = OUT_DIR / f"{date}.md", OUT_DIR / f"{date}.xlsx"
+    md, xlsx_path, docx_path = (OUT_DIR / f"{date}{ext}" for ext in (".md", ".xlsx", ".docx"))
     md.write_text(text, encoding="utf-8")
     wb.save(xlsx_path)
-    return text, md, xlsx_path
+    doc.save(docx_path)
+    return text, md, xlsx_path, docx_path
 
 
 def main():
@@ -187,9 +203,9 @@ def main():
     track = a.track or (ask("馬場 (良/稍重/重/不良)", "良") if interactive else "良")
     if track not in C.TRACKS:
         raise SystemExit(f"馬場は {'/'.join(C.TRACKS)} のどれか")
-    text, md, xlsx_path = run(date, temp, sky_word, a.sunshine, track, a.entries)
+    text, *paths = run(date, temp, sky_word, a.sunshine, track, a.entries)
     print(text)
-    print(f"→ {md.relative_to(D.ROOT)}, {xlsx_path.relative_to(D.ROOT)}")
+    print("→ " + ", ".join(str(x.relative_to(D.ROOT)) for x in paths))
 
 
 if __name__ == "__main__":
