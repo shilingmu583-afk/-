@@ -3,6 +3,7 @@
 使い方: python3 -m keiba.analyze
   → data/keiba/model.json（予想に使う重みと検証結果）
   → 大井競馬_条件別分析.html（条件別の傾向レポート）
+  → 大井競馬_分析データ.xlsx（条件別の傾向・好成績騎手・全レース結果を Excel で）
 """
 import datetime as dt
 import html
@@ -13,9 +14,11 @@ from collections import defaultdict
 from . import conditions as C
 from . import data as D
 from . import model as M
+from . import xlsx as X
 
 MODEL_JSON = D.DATA / "model.json"
 REPORT = D.ROOT / "大井競馬_条件別分析.html"
+XLSX = D.ROOT / "大井競馬_分析データ.xlsx"
 STYLES = ("逃げ", "先行", "差し", "追込")
 GATES = ("内", "中", "外")
 
@@ -185,6 +188,55 @@ td.hi{{color:var(--hi);font-weight:650}} td.lo{{color:var(--lo)}}
 </main></body></html>"""
 
 
+def write_xlsx(result, bt, races, path=XLSX):
+    """分析結果と全レース結果を Excel にまとめる。"""
+    wb = X.new_book()
+    v = bt.get("検証", {})
+    base = bt.get("オッズと馬の地力だけで検証", {})
+    lines = [
+        "大井競馬 条件別分析データ",
+        ("対象期間", f"{races[0].date} 〜 {races[-1].date}（{len(races):,} レース）"),
+        ("作成日", dt.date.today().isoformat()),
+        ("四季", "春=3〜5月、夏=6〜8月、秋=9〜11月、冬=12〜2月"),
+        ("明るさ", "発走が日の入りの60分前より早い=昼、日の入り±60分=薄暮、60分後より遅い=ナイター"),
+        ("天候", "東京（気象庁）の日照時間 6時間以上=晴天、2〜6時間=薄日、2時間未満=曇雨"),
+        ("A/E", "実際の数 ÷ 頭数から見た期待値。1.00が平均、1.15以上（緑）は有利、0.85以下（赤）は不利"),
+        ("枠", "内=1〜2枠、中=3〜6枠、外=7〜8枠"),
+        ("脚質", "1コーナーの通過順から 逃げ／先行／差し／追込"),
+        "",
+        ("予想モデルの検証", f"古い75%で学習 → 新しい25%（{' 〜 '.join(bt.get('検証期間', ['–']))}）で検証"),
+    ]
+    for k in ("レース数", "◎勝率", "◎複勝率", "◎単勝回収率", "1番人気の勝率"):
+        if k in v:
+            lines.append((k, f"{v[k]:.1%}" if isinstance(v[k], float) else str(v[k])))
+    if base:
+        lines.append(("条件を使わない場合の◎勝率", f"{base.get('◎勝率', 0):.1%}（オッズと馬の地力だけ）"))
+    X.text_sheet(wb.create_sheet("説明"), lines)
+
+    ws = wb.create_sheet("条件別の傾向")
+    row = 1
+    for name, rows in result["条件別の傾向"].items():
+        row = X.table_at(ws, row, rows, title=name)
+    ws = wb.create_sheet("好成績騎手")
+    row = 1
+    for name, rows in result["条件別の好成績騎手"].items():
+        row = X.table_at(ws, row, rows, title=f"{name}別（40騎乗以上・複勝A/E順）")
+
+    rows = []
+    for race in races:
+        n = race.field_size()
+        for r in sorted(race.runners, key=lambda r: r.finish or 99):
+            rows.append({"日付": race.date.isoformat(), "R": race.no, "発走": race.start, "四季": race.season,
+                         "明るさ": race.light, "天候": race.sky, "日照時間": race.sunshine, "馬場": race.track,
+                         "距離": race.distance, "着順": r.finish, "枠": r.gate, "馬番": r.number,
+                         "馬名": r.horse, "騎手": r.jockey, "人気": r.popularity, "単勝オッズ": r.odds,
+                         "脚質": D.style_from_corner(r.corner, n), "通過": r.corner})
+    ws = wb.create_sheet("レース結果")
+    X.table_at(ws, 1, rows, name="RaceResults")
+    ws.freeze_panes = "A2"
+    wb.save(path)
+
+
 def main():
     races = D.load_races()
     if not races:
@@ -197,8 +249,9 @@ def main():
         "特徴量": M.FEATURES, "重み": w_all, "バックテスト": bt, **result,
     }, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
     REPORT.write_text(render(result, bt, races), encoding="utf-8")
+    write_xlsx(result, bt, races)
     v = bt.get("検証", {})
-    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}")
+    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}, {XLSX.name}")
     for k, val in v.items():
         print(f"  {k}: {val:.3f}" if isinstance(val, float) else f"  {k}: {val}")
 

@@ -23,6 +23,7 @@ import re
 from . import conditions as C
 from . import data as D
 from . import model as M
+from . import xlsx as X
 
 MARKS = "◎○▲△△"
 OUT_DIR = D.DATA / "predictions"
@@ -113,8 +114,19 @@ def main():
             f"- 学習データ: {past[0].date if past else '–'} 〜 {past[-1].date if past else '–'}"
             f"（{len(past)} レース）\n")
     out = [head]
+    wb = X.new_book()
+    ws_all = wb.create_sheet("予想")
+    xrow = 1
+    ws_all.cell(row=xrow, column=1, value=head.splitlines()[0].lstrip("# ")).font = X.title_font
+    for line in head.splitlines()[1:]:
+        if line:
+            xrow += 1
+            ws_all.cell(row=xrow, column=1, value=line.lstrip("- ")).font = X.base
+    xrow += 2
     for race in races:
         rows = predict_race(race, history, w)
+        xrow = X.table_at(ws_all, xrow, rows,
+                          title=f"{race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）")
         out.append(f"\n## {race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）\n\n"
                    "| 印 | 馬番 | 馬名 | 騎手 | 脚質 | 勝率 | 3着内率 | 根拠 |\n|---|---|---|---|---|---|---|---|\n")
         for r in rows:
@@ -124,8 +136,10 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUT_DIR / f"{date}.md"
     path.write_text(text, encoding="utf-8")
+    xlsx_path = OUT_DIR / f"{date}.xlsx"
+    wb.save(xlsx_path)
     print(text)
-    print(f"→ {path.relative_to(D.ROOT)}")
+    print(f"→ {path.relative_to(D.ROOT)}, {xlsx_path.relative_to(D.ROOT)}")
 
 
 if __name__ == "__main__":

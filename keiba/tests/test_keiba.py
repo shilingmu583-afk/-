@@ -113,6 +113,13 @@ class ModelTest(unittest.TestCase):
         bt, _, _ = M.backtest(self.races)
         page = render(res, bt, self.races)
         self.assertIn("<title>大井競馬 条件別分析</title>", page)
+        from openpyxl import load_workbook
+        from keiba.analyze import write_xlsx
+        path = Path(self.tmp.name) / "a.xlsx"
+        write_xlsx(res, bt, self.races, path)
+        wb = load_workbook(path)
+        self.assertEqual(wb.sheetnames, ["説明", "条件別の傾向", "好成績騎手", "レース結果"])
+        self.assertEqual(wb["レース結果"].max_row, 1 + sum(r.field_size() for r in self.races))
 
 
 class PredictTest(unittest.TestCase):
