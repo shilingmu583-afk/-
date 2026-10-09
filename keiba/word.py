@@ -36,6 +36,9 @@ def _set_font(style_or_run, size=None, bold=None, color=None):
 
 def new_document(landscape=True):
     doc = Document()
+    # python-docx の既定テンプレートは w:zoom に必須の w:percent が無く、厳密な検査で弾かれる
+    for z in doc.settings.element.findall(qn("w:zoom")):
+        z.set(qn("w:percent"), "100")
     sec = doc.sections[0]
     sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)  # A4
     if landscape:
