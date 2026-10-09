@@ -1,0 +1,2 @@
+requests>=2.31
+ezdxf>=1.3
