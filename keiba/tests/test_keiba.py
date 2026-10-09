@@ -17,8 +17,13 @@ from keiba import model as M
 from keiba.predict import top3_probs
 
 
+def synthetic_max_temp(d):
+    """東京の最高気温らしい値（1月下旬が最低 約9℃、8月上旬が最高 約32℃）。"""
+    return round(20.5 - 11.5 * math.cos(2 * math.pi * (d.timetuple().tm_yday - 25) / 365), 1)
+
+
 def synthetic_runners(days=200, seed=1):
-    """ナイターでは内枠・逃げ馬が、冬は騎手「冬男」が強い、という傾向を仕込んだ合成データ。"""
+    """ナイターでは内枠・逃げ馬が、冬は騎手「冬男」が、暑い日は「夏馬」が強い、という傾向を仕込んだ合成データ。"""
     rnd = random.Random(seed)
     horses = [(f"馬{i}", rnd.gauss(0, 0.6), rnd.choice("逃先差追")) for i in range(300)]
     jockeys = [f"騎手{i}" for i in range(20)] + ["冬男"]
@@ -27,7 +32,7 @@ def synthetic_runners(days=200, seed=1):
         d += dt.timedelta(days=rnd.choice([1, 1, 2, 5]))
         for no in range(1, 9):
             start = f"{14 + no + (no > 4)}:{rnd.choice(['00', '30'])}"
-            race = D.Race(date=d, no=no, start=start)
+            race = D.Race(date=d, no=no, start=start, max_temp=synthetic_max_temp(d) + rnd.gauss(0, 2))
             field = rnd.sample(horses, 12)
             ent = []
             for k, (name, ability, st) in enumerate(field):
@@ -38,12 +43,15 @@ def synthetic_runners(days=200, seed=1):
                     s += 0.6 * (gate <= 2) + 0.8 * (st == "逃")
                 if j == "冬男" and race.season == "冬":
                     s += 1.2
-                ent.append((s, name, gate, k + 1, j, st))
+                if int(name[1:]) % 4 == 0:  # 夏馬
+                    s += {"暑い": 1.0, "寒い": -0.6}.get(race.temp, 0)
+                ent.append((s, name, gate, k + 1, j, st, ability + rnd.gauss(0, 0.5)))
+            pop = {e[1]: i for i, e in enumerate(sorted(ent, key=lambda e: -e[6]), 1)}
             ent.sort(reverse=True)
-            for pos, (s, name, gate, num, j, st) in enumerate(ent, 1):
+            for pos, (s, name, gate, num, j, st, _) in enumerate(ent, 1):
                 first = {"逃": 1, "先": rnd.randint(2, 4), "差": rnd.randint(5, 8), "追": rnd.randint(9, 12)}[st]
-                rows.append({"日付": d.isoformat(), "R": no, "発走": start, "距離": 1200, "馬場": "良",
-                             "天候": "晴", "着順": pos, "枠": gate, "馬番": num, "馬名": name, "騎手": j,
+                rows.append({"_最高気温": race.max_temp, "日付": d.isoformat(), "R": no, "発走": start, "距離": 1200, "馬場": "良",
+                             "天候": "晴", "着順": pos, "枠": gate, "馬番": num, "馬名": name, "騎手": j, "人気": pop[name],
                              "通過": f"{first}-{first}-{pos}-{pos}"})
     return rows
 
@@ -68,14 +76,22 @@ class ConditionsTest(unittest.TestCase):
         self.assertEqual(C.sky(0.4, "晴"), "曇雨")
         self.assertEqual(C.sky(None, "小雨"), "曇雨")
 
+    def test_temp_band(self):
+        self.assertEqual([C.temp_band(t) for t in (5, 12, 19.9, 20, 28, 35)],
+                         ["寒い", "涼しい", "涼しい", "暖かい", "暑い", "暑い"])
+        self.assertEqual(C.temp_band(None), "")
+
 
 class ModelTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
-        path = Path(cls.tmp.name) / "runners.csv"
-        D.write_csv(path, D.RUNNER_COLS, synthetic_runners())
-        cls.races = D.load_races(path, Path(cls.tmp.name) / "none.csv")
+        path, wpath = Path(cls.tmp.name) / "runners.csv", Path(cls.tmp.name) / "weather.csv"
+        rows = synthetic_runners()
+        D.write_csv(path, D.RUNNER_COLS, rows)
+        D.write_csv(wpath, D.WEATHER_COLS, [{"日付": r["日付"], "最高気温": f"{r['_最高気温']:.1f}"}
+                                            for r in {r["日付"]: r for r in rows}.values()])
+        cls.races = D.load_races(path, wpath)
 
     @classmethod
     def tearDownClass(cls):
@@ -90,12 +106,27 @@ class ModelTest(unittest.TestCase):
         self.assertGreater(weights["枠×条件"], 0.2)
         self.assertGreater(weights["脚質×条件"], 0.2)
         self.assertGreater(weights["騎手×条件"], 0.1)
+        self.assertGreater(weights["馬×気温"], 0.2)
+        # 条件を使うと、オッズと馬の地力だけより当たる
+        self.assertLess(v["対数損失"], bt["オッズと馬の地力だけで検証"]["対数損失"])
         # 仕込んだ傾向: ナイターの逃げは有利、昼の逃げは平均並み
         s = history.s
         self.assertGreater(s.ae([("style", "逃げ", "ナイター")], place=False), 1.5)
         self.assertLess(abs(s.ae([("style", "逃げ", "昼")], place=False) - 1), 0.35)
         self.assertGreater(s.ae([("jockey", "冬男", "ナイター", "冬")]),
                            s.ae([("jockey", "冬男", "ナイター", "秋")]) * 1.3)
+
+    def test_outlook_from_date_and_temperature(self):
+        from keiba.outlook import outlook, summary_lines
+        _, history = M.build_dataset(self.races)
+        o = outlook(history.s, dt.date(2026, 1, 15), 9.0, "晴天", "良")
+        self.assertEqual((o["四季"], o["気温"]), ("冬", "寒い"))
+        night = o["明るさ別"]["ナイター"]
+        self.assertEqual(max(night["脚質 勝利A/E"], key=night["脚質 勝利A/E"].get), "逃げ")
+        self.assertEqual(max(night["枠 複勝A/E"], key=night["枠 複勝A/E"].get), "内")
+        self.assertEqual(night["好調騎手"][0]["騎手"], "冬男")
+        self.assertTrue(0 < night["1番人気の勝率"] < 1)
+        self.assertTrue(any(line.startswith("ナイター: ") for line in summary_lines(o)))
 
     def test_features_use_only_past_days(self):
         dataset, _ = M.build_dataset(self.races)
@@ -147,13 +178,24 @@ class ParseTest(unittest.TestCase):
         self.assertEqual((r["発走"], r["距離"], r["馬場"], r["天候"]), ("14:50", "1200", "稍重", "晴"))
         self.assertEqual(rows[1]["着順"], "")
 
+    def test_parse_entries(self):
+        page = """<p>3R 発走時刻 15:55 ダート1600m</p><table>
+        <tr><th>枠番</th><th>馬番</th><th>馬名</th><th>性齢</th><th>騎手</th><th>人気</th></tr>
+        <tr><td>1</td><td>1</td><td>テストワン (牝4)</td><td>牝4</td><td>☆高橋</td><td>2</td></tr>
+        <tr><td>2</td><td>2</td><td>テストツー</td><td>牡5</td><td>伊藤</td><td>1</td></tr></table>"""
+        rows = F.parse_entries(page, 3)
+        self.assertEqual([(r["R"], r["発走"], r["距離"], r["枠"], r["馬番"], r["馬名"], r["騎手"], r["人気"])
+                          for r in rows],
+                         [(3, "15:55", "1600", "1", "1", "テストワン", "高橋", "2"),
+                          (3, "15:55", "1600", "2", "2", "テストツー", "伊藤", "1")])
+
     def test_parse_jma(self):
         cells = ["5", "1010.1", "1013.2", "0.5", "0.5", "0.5", "12.3", "16.0", "8.1", "60", "40",
                  "2.0", "5.0", "北", "9.0", "北北西", "7.4)", "--", "--", "晴後曇", "曇"]
         page = "<table><tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr></table>"
         rows = F.parse_jma_month(page, 2026, 1)
         self.assertEqual(rows, [{"日付": "2026-01-05", "日照時間": "7.4", "降水量": "0.5",
-                                 "平均気温": "12.3", "天気概況昼": "晴後曇", "天気概況夜": "曇"}])
+                                 "平均気温": "12.3", "最高気温": "16.0", "天気概況昼": "晴後曇", "天気概況夜": "曇"}])
 
 
 if __name__ == "__main__":

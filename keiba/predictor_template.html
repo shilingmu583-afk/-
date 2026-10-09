@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大井競馬 当日予想</title>
+<style>
+:root{--bg:#fbfaf7;--fg:#1d1d1b;--muted:#6b6a65;--line:#e4e1d8;--card:#fff;--hi:#1f7a4d;--lo:#b3412e;--acc:#2b5aa8;--bar:#c9d6ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16171a;--fg:#ecebe6;--muted:#9a998f;--line:#2e2f33;--card:#1e1f23;--hi:#5fcf95;--lo:#f08a74;--acc:#86a8ec;--bar:#34405a}}
+:root[data-theme="dark"]{--bg:#16171a;--fg:#ecebe6;--muted:#9a998f;--line:#2e2f33;--card:#1e1f23;--hi:#5fcf95;--lo:#f08a74;--acc:#86a8ec;--bar:#34405a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.5rem;margin:0 0 4px}.muted{color:var(--muted)}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+label{display:flex;flex-direction:column;font-size:.85rem;color:var(--muted);gap:4px}
+input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.cond{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{margin:0 0 4px;font-size:1.15rem}.lead{margin:0 0 12px;font-weight:600}
+h3{font-size:.85rem;color:var(--muted);margin:14px 0 6px;font-weight:600}
+.row{display:grid;grid-template-columns:4.6em 1fr 3.2em;align-items:center;gap:8px;font-size:.9rem;margin:3px 0}
+.track{height:10px;background:var(--line);border-radius:5px;position:relative;overflow:hidden}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:5px}
+.mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted)}
+.v{text-align:right;font-variant-numeric:tabular-nums}.v.hi{color:var(--hi);font-weight:650}.v.lo{color:var(--lo)}
+ol{margin:0;padding-left:1.4em;font-size:.9rem}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:20px}
+</style>
+</head>
+<body>
+<main>
+<h1>大井競馬 当日予想</h1>
+<p class="muted" id="period"></p>
+<form id="f" onsubmit="return false">
+  <label>日付<input type="date" id="date" required></label>
+  <label>最高気温（℃）<input type="number" id="temp" step="0.5" value="22" required></label>
+  <label>天気<select id="sky"><option value="晴天">晴</option><option value="薄日">曇</option><option value="曇雨">雨</option></select></label>
+  <label>馬場<select id="track"><option>良</option><option>稍重</option><option>重</option><option>不良</option></select></label>
+</form>
+<div class="cond" id="cond"></div>
+<div id="out"></div>
+<p class="muted" style="margin-top:24px;font-size:.85rem">A/E = 実際の数 ÷ 頭数から見た期待値。1.00 が平均（棒の中央線）で、
+<span style="color:var(--hi)">1.15以上</span>は有利、<span style="color:var(--lo)">0.85以下</span>は不利。
+件数の少ない条件は大きな区分の成績に寄せて計算している。出走馬ごとの勝率は <code>python3 -m keiba.predict</code> で出す。</p>
+</main>
+<script>
+const DATA = __DATA__;
+const K = 3, LIGHTS = ["昼", "薄暮", "ナイター"], GATES = ["内", "中", "外"], STYLES = ["逃げ", "先行", "差し", "追込"];
+const LAT = 35.5925, LON = 139.7425, rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+
+function season(m) { return [12, 1, 2].includes(m) ? "冬" : m <= 5 ? "春" : m <= 8 ? "夏" : "秋"; }
+function tempBand(t) { return t < 12 ? "寒い" : t < 20 ? "涼しい" : t < 28 ? "暖かい" : "暑い"; }
+function sunset(d) {
+  const doy = Math.floor((d - new Date(d.getFullYear(), 0, 1)) / 864e5) + 1, g = 2 * Math.PI / 365 * (doy - 1);
+  const eq = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+  const dc = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g)
+    - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+  const ha = deg(Math.acos(Math.cos(rad(90.833)) / (Math.cos(rad(LAT)) * Math.cos(dc)) - Math.tan(rad(LAT)) * Math.tan(dc)));
+  const m = Math.round(720 - 4 * (LON - ha) - eq + 540);
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+}
+// model.py の Stats.ae と同じ縮小推定
+function ae(keys, place) {
+  const [a, e] = place ? [2, 3] : [0, 1];
+  let prior = 1;
+  for (const k of keys) { const s = DATA.stats[k.join("|")]; if (s && s[e] > 0) prior = (s[a] + K * prior) / (s[e] + K); }
+  return Math.max(prior, 0.05);
+}
+// model.py の cond_keys と同じ並び
+function condKeys(L, S, Tb, Y, T, kind, v) {
+  if (kind === "pop") return [["pop", v], ["pop", v, L], ["pop", v, L, S], ["pop", v, L, S, Tb]];
+  if (kind === "gate") return [["gate", v], ["gate", v, L], ["gate", v, L, S], ["gate", v, L, S, Tb], ["gate", v, L, S, Tb, T]];
+  if (kind === "style") return [["style", v], ["style", v, L], ["style", v, L, Tb], ["style", v, L, Tb, Y], ["style", v, L, Tb, Y, T]];
+  return [["jockey", v], ["jockey", v, L], ["jockey", v, L, S], ["jockey", v, L, S, Tb]];
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+function bar(label, v) {
+  const cls = v >= 1.15 ? "hi" : v <= 0.85 ? "lo" : "", w = Math.min(100, v / 2 * 100);
+  return `<div class="row"><span>${esc(label)}</span><div class="track"><div class="fill" style="width:${w}%"></div><div class="mid"></div></div><span class="v ${cls}">${v.toFixed(2)}</span></div>`;
+}
+function render() {
+  const ds = document.getElementById("date").value, t = parseFloat(document.getElementById("temp").value);
+  const Y = document.getElementById("sky").value, T = document.getElementById("track").value;
+  if (!ds || isNaN(t)) return;
+  const d = new Date(ds + "T12:00:00"), S = season(d.getMonth() + 1), Tb = tempBand(t);
+  document.getElementById("cond").innerHTML = [`${S}`, `最高 ${t}℃（${Tb}）`, `天気 ${document.querySelector("#sky option:checked").text}`,
+    `馬場 ${T}`, `日の入り ${sunset(d)}`].map(c => `<span class="chip">${esc(c)}</span>`).join("");
+  const out = document.getElementById("out");
+  if (!Object.keys(DATA.stats).length) { out.innerHTML = `<div class="empty">分析データがまだ無い。<code>python3 -m keiba.fetch</code> → <code>python3 -m keiba.analyze</code> を実行すると表示される。</div>`; return; }
+  let lights = LIGHTS.filter(L => GATES.some(g => DATA.stats[["gate", g, L, S].join("|")]));
+  if (!lights.length) lights = LIGHTS;
+  const base = DATA.stats["pop|1"];
+  out.innerHTML = `<div class="grid">` + lights.map(L => {
+    const favAe = ae(condKeys(L, S, Tb, Y, T, "pop", "1"), false);
+    const favRate = base && base[4] ? favAe * base[1] / base[4] : null;
+    const fav = base && base[1] ? favAe / (base[0] / base[1]) : 1;  // いつもの1番人気と比べた信頼度
+    const gates = GATES.map(g => [g, ae(condKeys(L, S, Tb, Y, T, "gate", g), true)]);
+    const styles = STYLES.map(s => [s, ae(condKeys(L, S, Tb, Y, T, "style", s), false)]);
+    const jk = DATA.jockeys.map(j => [j, ae(condKeys(L, S, Tb, Y, T, "jockey", j), true)]).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const bestG = gates.reduce((a, b) => b[1] > a[1] ? b : a), bestS = styles.reduce((a, b) => b[1] > a[1] ? b : a);
+    const trust = fav >= 1.1 ? "堅い" : fav <= 0.9 ? "荒れやすい" : "平均的";
+    return `<section class="card"><h2>${L}のレース</h2>
+      <p class="lead">${esc(bestG[0])}枠・${esc(bestS[0])}が有利／1番人気は${trust}${favRate != null ? `（勝率 ${(favRate * 100).toFixed(0)}%）` : ""}</p>
+      <h3>1番人気の信頼度（いつもの1番人気 = 1.00）</h3>${bar("1番人気", fav)}
+      <h3>枠（3着内A/E）</h3>${gates.map(([g, v]) => bar(g + "枠", v)).join("")}
+      <h3>脚質（勝利A/E）</h3>${styles.map(([s, v]) => bar(s, v)).join("")}
+      <h3>好調騎手（3着内A/E）</h3><ol>${jk.map(([j, v]) => `<li>${esc(j)} <span class="muted">${v.toFixed(2)}</span></li>`).join("")}</ol>
+    </section>`;
+  }).join("") + `</div>`;
+}
+document.getElementById("period").textContent = DATA.period ? `分析データ: ${DATA.period}（${DATA.races.toLocaleString()} レース）` : "分析データなし";
+const now = new Date(); document.getElementById("date").value = new Date(now - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+document.getElementById("f").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>

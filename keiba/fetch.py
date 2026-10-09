@@ -110,9 +110,9 @@ def race_list_url(d: dt.date) -> str:
         {"k_raceDate": d.strftime("%Y/%m/%d"), "k_babaCode": OHI_BABA_CODE})
 
 
-def result_urls(d: dt.date, wait: float) -> dict[int, list[str]]:
-    """その日の大井のレース番号 → 結果ページ候補 URL。開催が無い日は空。"""
-    p = parse(get(race_list_url(d), wait))
+def result_urls(d: dt.date, wait: float, prefer=("Result", "Dividend"), refresh=False) -> dict[int, list[str]]:
+    """その日の大井のレース番号 → ページ候補 URL（prefer を含むものが先）。開催が無い日は空。"""
+    p = parse(get(race_list_url(d), wait, refresh))
     out: dict[int, list[str]] = {}
     for href, _text in p.links:
         m = re.search(r"k_raceNo=(\d+)", href)
@@ -122,7 +122,7 @@ def result_urls(d: dt.date, wait: float) -> dict[int, list[str]]:
         urls = out.setdefault(int(m.group(1)), [])
         if url not in urls:
             # 「結果」らしいページを先に試す
-            (urls.insert(0, url) if "Result" in href or "Dividend" in href else urls.append(url))
+            (urls.insert(0, url) if any(k in href for k in prefer) else urls.append(url))
     return out
 
 
@@ -184,6 +184,52 @@ def parse_result(page: str, d: dt.date, no: int) -> list[dict]:
     return []
 
 
+def _race_meta(text):
+    return {
+        "発走": (m.group(1) if (m := re.search(r"発走[時刻]*\s*[:：]?\s*(\d{1,2}[:：]\d{2})", text)) else "").replace("：", ":"),
+        "距離": m.group(1) if (m := re.search(r"(\d{3,4})\s*[mｍM]", text)) else "",
+    }
+
+
+def parse_entries(page: str, no: int) -> list[dict]:
+    """出馬表ページから R, 発走, 距離, 枠, 馬番, 馬名, 騎手（あれば 単勝オッズ, 人気）を取る。"""
+    p = parse(page)
+    meta = {"R": no, **_race_meta(p.page_text)}
+    for table in p.tables:
+        hi = next((i for i, r in enumerate(table[:3]) if any("馬名" in c for c in r)
+                   and any("騎手" in c or "馬番" in c for c in r)), None)
+        if hi is None:
+            continue
+        cols = _map_header(table[hi])
+        cols.pop("着順", None)
+        if "馬名" not in cols:
+            continue
+        rows = []
+        for r in table[hi + 1:]:
+            row = dict(meta)
+            for col, i in cols.items():
+                row[col] = r[i] if i < len(r) else ""
+            row["馬名"] = re.sub(r"\s*\(.*?\)\s*", "", row["馬名"]).strip()
+            row["騎手"] = re.sub(r"[▲△☆◇★\s]|\(.*?\)", "", row.get("騎手", ""))
+            if row["馬名"] and str(row.get("馬番", "")).isdigit():
+                rows.append(row)
+        if rows:
+            return rows
+    return []
+
+
+def fetch_entries(d: dt.date, wait: float = 1.0) -> list[dict]:
+    """その日の大井の出馬表。開催が無い・取れないときは空リスト。"""
+    rows = []
+    for no, urls in sorted(result_urls(d, wait, prefer=("MarkTable",), refresh=True).items()):
+        for url in urls:
+            part = parse_entries(get(url, wait, refresh=True), no)
+            if part:
+                rows += part
+                break
+    return rows
+
+
 def fetch_results(start: dt.date, end: dt.date, wait: float) -> list[dict]:
     existing = D.read_csv(D.RUNNERS_CSV)
     done = {(r["日付"], r["R"]) for r in existing}
@@ -220,7 +266,7 @@ def _val(s: str):
 
 
 def parse_jma_month(page: str, y: int, m: int) -> list[dict]:
-    """daily_s1（東京）の表: 0日 3降水量合計 6平均気温 16日照時間 19天気概況昼 20天気概況夜。"""
+    """daily_s1（東京）の表: 0日 3降水量合計 6平均気温 7最高気温 16日照時間 19天気概況昼 20天気概況夜。"""
     rows = []
     for table in parse(page).tables:
         for r in table:
@@ -228,7 +274,7 @@ def parse_jma_month(page: str, y: int, m: int) -> list[dict]:
                 continue
             rows.append({"日付": dt.date(y, m, int(r[0])).isoformat(), "日照時間": _val(r[16]),
                          "降水量": _val(r[3]) or ("0" if r[3].strip() == "--" else ""),
-                         "平均気温": _val(r[6]), "天気概況昼": r[19], "天気概況夜": r[20]})
+                         "平均気温": _val(r[6]), "最高気温": _val(r[7]), "天気概況昼": r[19], "天気概況夜": r[20]})
     return rows
 
 

@@ -3,6 +3,7 @@
 使い方: python3 -m keiba.analyze
   → data/keiba/model.json（予想に使う重みと検証結果）
   → 大井競馬_条件別分析.html（条件別の傾向レポート）
+  → 大井競馬_予想.html（日付と気温を入れると、その日の有利な枠・脚質・騎手が出るページ）
   → 大井競馬_分析データ.xlsx（条件別の傾向・好成績騎手・全レース結果を Excel で）
 """
 import datetime as dt
@@ -14,11 +15,14 @@ from collections import defaultdict
 from . import conditions as C
 from . import data as D
 from . import model as M
+from . import outlook as O
 from . import xlsx as X
 
 MODEL_JSON = D.DATA / "model.json"
 REPORT = D.ROOT / "大井競馬_条件別分析.html"
 XLSX = D.ROOT / "大井競馬_分析データ.xlsx"
+PREDICTOR = D.ROOT / "大井競馬_予想.html"
+PREDICTOR_TEMPLATE = D.ROOT / "keiba" / "predictor_template.html"
 STYLES = ("逃げ", "先行", "差し", "追込")
 GATES = ("内", "中", "外")
 
@@ -237,11 +241,29 @@ def write_xlsx(result, bt, races, path=XLSX):
     wb.save(path)
 
 
+def write_predictor(stats: M.Stats, races, path=PREDICTOR):
+    """日付と気温を入れて使う予想ページ。条件別の集計値を埋め込み、計算はブラウザで行う。"""
+    jockeys = sorted(k[1] for k, c in stats.c.items()
+                     if k[0] == "jockey" and len(k) == 2 and c[4] >= O.MIN_RIDES)
+    keep = set(jockeys)
+    data = {
+        "period": f"{races[0].date} 〜 {races[-1].date}" if races else "",
+        "races": len(races),
+        "jockeys": jockeys,
+        "stats": {"|".join(map(str, k)): [round(v, 3) for v in c] for k, c in stats.c.items()
+                  if (k[0] in ("gate", "style") and k[1]) or (k[0] == "pop" and k[1] == "1")
+                  or (k[0] == "jockey" and k[1] in keep)},
+    }
+    page = PREDICTOR_TEMPLATE.read_text(encoding="utf-8")
+    js = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    path.write_text(page.replace("__DATA__", js), encoding="utf-8")
+
+
 def main():
     races = D.load_races()
     if not races:
         raise SystemExit(f"{D.RUNNERS_CSV} にデータがない。先に python3 -m keiba.fetch を実行する。")
-    bt, w_all, _ = M.backtest(races)
+    bt, w_all, history = M.backtest(races)
     result = analyze(races)
     MODEL_JSON.write_text(json.dumps({
         "作成日": dt.date.today().isoformat(),
@@ -250,8 +272,9 @@ def main():
     }, ensure_ascii=False, indent=1, default=float), encoding="utf-8")
     REPORT.write_text(render(result, bt, races), encoding="utf-8")
     write_xlsx(result, bt, races)
+    write_predictor(history.s, races)
     v = bt.get("検証", {})
-    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}, {XLSX.name}")
+    print(f"{len(races)} レースを分析 → {MODEL_JSON.relative_to(D.ROOT)}, {REPORT.name}, {XLSX.name}, {PREDICTOR.name}")
     for k, val in v.items():
         print(f"  {k}: {val:.3f}" if isinstance(val, float) else f"  {k}: {val}")
 

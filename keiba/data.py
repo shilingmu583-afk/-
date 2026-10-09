@@ -17,7 +17,7 @@ WEATHER_CSV = DATA / "weather.csv"
 
 RUNNER_COLS = ["日付", "R", "発走", "距離", "馬場", "天候", "着順", "枠", "馬番", "馬名",
                "騎手", "調教師", "斤量", "馬体重", "単勝オッズ", "人気", "通過", "タイム"]
-WEATHER_COLS = ["日付", "日照時間", "降水量", "平均気温", "天気概況昼", "天気概況夜"]
+WEATHER_COLS = ["日付", "日照時間", "降水量", "平均気温", "最高気温", "天気概況昼", "天気概況夜"]
 
 
 def _num(v, cast=float):
@@ -49,6 +49,7 @@ class Race:
     track: str = ""
     weather: str = ""
     sunshine: float | None = None
+    max_temp: float | None = None
     runners: list[Runner] = field(default_factory=list)
 
     @property
@@ -62,6 +63,10 @@ class Race:
     @property
     def sky(self):
         return C.sky(self.sunshine, self.weather)
+
+    @property
+    def temp(self):
+        return C.temp_band(self.max_temp)
 
     @property
     def key(self):
@@ -108,7 +113,7 @@ def load_races(path=RUNNERS_CSV, weather_path=WEATHER_CSV) -> list[Race]:
                 race = races[(d, no)] = Race(
                     date=d, no=no, start=row.get("発走", ""), distance=_num(row.get("距離"), int),
                     track=row.get("馬場", ""), weather=row.get("天候", ""),
-                    sunshine=_num(w.get("日照時間")))
+                    sunshine=_num(w.get("日照時間")), max_temp=_num(w.get("最高気温")))
             race.runners.append(Runner(
                 horse=row["馬名"], gate=_num(row.get("枠"), int), number=_num(row.get("馬番"), int),
                 jockey=row.get("騎手", ""), trainer=row.get("調教師", ""),

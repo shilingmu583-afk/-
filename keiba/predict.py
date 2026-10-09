@@ -1,16 +1,21 @@
-"""その日の大井のレースを、過去1年の条件別成績から予想する。
+"""日付と気温を入れて、その日の大井のレースを過去1年の条件別成績から予想する。
 
 使い方:
-  python3 -m keiba.predict data/keiba/entries/2026-10-09.csv --sunshine 7.5 --track 良
-  python3 -m keiba.predict data/keiba/entries/2026-10-09.csv --sky 曇 --track 稍重
+  python3 -m keiba.predict                                  # 日付・気温などを順に聞かれる
+  python3 -m keiba.predict --date 2026-10-10 --temp 22       # 日付と最高気温（予報）
+  python3 -m keiba.predict --date 2026-10-10 --temp 22 --sky 雨 --track 重
+  python3 -m keiba.predict --date 2026-10-10 --temp 22 --entries 出馬表.csv
+
+--temp はその日の最高気温（天気予報の値でよい）。天候は --sky（晴/曇/雨）か --sunshine（日照時間）、
+馬場は --track（良/稍重/重/不良）。省略すると 晴・良 とみなす。
+
+出走馬ごとの予想には出馬表が必要。--entries が無ければ data/keiba/entries/YYYY-MM-DD.csv を探し、
+それも無ければ地方競馬情報サイトから取得を試みる。出馬表が無いときは、条件だけで分かる
+「その日の傾向」（有利な枠・脚質、1番人気の信頼度、好調騎手）を出す。
 
 出馬表 CSV（1頭 = 1行、UTF-8）の列:
   R, 発走(HH:MM), 距離, 枠, 馬番, 馬名, 騎手  （必須）
   単勝オッズ, 人気                            （任意。あれば精度が上がる。締切前のオッズでよい）
-日付はファイル名（YYYY-MM-DD.csv）か --date で指定する。
-
-当日の天候は --sunshine（予報の日照時間）か --sky（晴/曇/雨）、馬場は --track（良/稍重/重/不良）。
-省略すると 晴天・良 とみなす。
 
 先に python3 -m keiba.analyze を実行して data/keiba/model.json を作っておくこと。
 """
@@ -23,6 +28,7 @@ import re
 from . import conditions as C
 from . import data as D
 from . import model as M
+from . import outlook as O
 from . import xlsx as X
 
 MARKS = "◎○▲△△"
@@ -30,13 +36,13 @@ OUT_DIR = D.DATA / "predictions"
 MODEL_JSON = D.DATA / "model.json"
 
 
-def load_entries(path, date: dt.date, sunshine, sky_word, track) -> list[D.Race]:
+def load_entries(rows, date: dt.date, sunshine, sky_word, track, max_temp=None) -> list[D.Race]:
     races: dict[int, D.Race] = {}
-    for row in D.read_csv(path):
+    for row in rows:
         no = int(row["R"])
         race = races.setdefault(no, D.Race(
             date=date, no=no, start=row.get("発走", ""), distance=D._num(row.get("距離"), int),
-            track=track, weather=sky_word, sunshine=sunshine))
+            track=track, weather=sky_word, sunshine=sunshine, max_temp=max_temp))
         race.runners.append(D.Runner(
             horse=row["馬名"].strip(), gate=D._num(row.get("枠"), int), number=D._num(row.get("馬番"), int),
             jockey=re.sub(r"[▲△☆◇★\s]", "", row.get("騎手", "")),
@@ -82,64 +88,108 @@ def predict_race(race: D.Race, history: M.History, w):
     return rows
 
 
-def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("entries", type=pathlib.Path, help="出馬表 CSV")
-    ap.add_argument("--date", type=dt.date.fromisoformat)
-    ap.add_argument("--sunshine", type=float, help="予報の日照時間（時間）")
-    ap.add_argument("--sky", default="", help="晴 / 曇 / 雨（--sunshine が無いとき）")
-    ap.add_argument("--track", default="良", choices=C.TRACKS)
-    a = ap.parse_args()
+def ask(prompt, default=""):
+    v = input(f"{prompt}" + (f" [{default}]" if default != "" else "") + ": ").strip()
+    return v or default
 
-    date = a.date
-    if date is None:
-        m = re.search(r"\d{4}-\d{2}-\d{2}", a.entries.name)
-        if not m:
-            raise SystemExit("日付が分からない。ファイル名を YYYY-MM-DD.csv にするか --date を付ける。")
-        date = dt.date.fromisoformat(m.group())
-    sky_word = a.sky or ("" if a.sunshine is not None else "晴")
 
+def find_entries(path, date):
+    """出馬表の行。--entries → data/keiba/entries/日付.csv → 地方競馬情報サイト の順に探す。"""
+    if path:
+        return D.read_csv(path), str(path)
+    local = D.DATA / "entries" / f"{date}.csv"
+    if local.exists():
+        return D.read_csv(local), str(local.relative_to(D.ROOT))
+    try:
+        from .fetch import fetch_entries
+        rows = fetch_entries(date)
+    except Exception as e:  # noqa: BLE001
+        print(f"（出馬表をサイトから取得できなかった: {e}）")
+        return [], ""
+    if rows:
+        D.write_csv(local, ["R", "発走", "距離", "枠", "馬番", "馬名", "騎手", "単勝オッズ", "人気"], rows)
+        return rows, f"地方競馬情報サイト（{local.relative_to(D.ROOT)} に保存）"
+    return [], ""
+
+
+def run(date, max_temp, sky_word="晴", sunshine=None, track="良", entries=None):
     if not MODEL_JSON.exists():
         raise SystemExit("data/keiba/model.json がない。先に python3 -m keiba.analyze を実行する。")
     w = json.loads(MODEL_JSON.read_text(encoding="utf-8"))["重み"]
+    w += [0.0] * (len(M.FEATURES) - len(w))
     past = [r for r in D.load_races() if r.date < date]
     _, history = M.build_dataset(past)
 
-    races = load_entries(a.entries, date, a.sunshine, sky_word, a.track)
-    sky = C.sky(a.sunshine, sky_word)
+    sky = C.sky(sunshine, sky_word)
+    rows, source = find_entries(entries, date)
+    races = load_entries(rows, date, sunshine, sky_word, track, max_temp)
+    lights = sorted({r.light for r in races if r.light}, key=C.LIGHTS.index) or None
+    o = O.outlook(history.s, date, max_temp, sky, track, lights)
+
     head = (f"# 大井競馬 予想 {date}（{'月火水木金土日'[date.weekday()]}）\n\n"
-            f"- 条件: {C.season(date)}／天候 {sky}"
-            f"{f'（日照 {a.sunshine:g} 時間）' if a.sunshine is not None else ''}／馬場 {a.track}／"
-            f"日の入り {C.fmt_minutes(C.sunset_minutes(date))}\n"
+            f"- 条件: {C.season(date)}／最高気温 {max_temp:g}℃（{C.temp_band(max_temp)}）／天候 {sky}"
+            f"{f'（日照 {sunshine:g} 時間）' if sunshine is not None else ''}／馬場 {track}／"
+            f"日の入り {o['日の入り']}\n"
             f"- 学習データ: {past[0].date if past else '–'} 〜 {past[-1].date if past else '–'}"
-            f"（{len(past)} レース）\n")
-    out = [head]
+            f"（{len(past)} レース）\n"
+            f"- 出馬表: {source or 'なし（条件から分かる傾向だけを表示）'}\n")
+    out = [head, "\n## この条件の傾向\n\n"] + [f"- {line}\n" for line in O.summary_lines(o)]
+
     wb = X.new_book()
-    ws_all = wb.create_sheet("予想")
+    ws = wb.create_sheet("予想")
     xrow = 1
-    ws_all.cell(row=xrow, column=1, value=head.splitlines()[0].lstrip("# ")).font = X.title_font
+    ws.cell(row=xrow, column=1, value=head.splitlines()[0].lstrip("# ")).font = X.title_font
     for line in head.splitlines()[1:]:
         if line:
             xrow += 1
-            ws_all.cell(row=xrow, column=1, value=line.lstrip("- ")).font = X.base
+            ws.cell(row=xrow, column=1, value=line.lstrip("- ")).font = X.base
     xrow += 2
+    trend = []
+    for L, v in o["明るさ別"].items():
+        trend.append({"明るさ": L, "1番人気の勝率": v["1番人気の勝率"], "1番人気の信頼度 A/E": v["1番人気の信頼度"],
+                      **{f"{g}枠 複勝A/E": a for g, a in v["枠 複勝A/E"].items()},
+                      **{f"{st} 勝利A/E": a for st, a in v["脚質 勝利A/E"].items()},
+                      "好調騎手": "・".join(j["騎手"] for j in v["好調騎手"])})
+    xrow = X.table_at(ws, xrow, trend, title="この条件の傾向",
+                      note="A/E: 1.00が平均（1番人気の信頼度は、いつもの1番人気と比べた値）。1.15以上（緑）は有利、0.85以下（赤）は不利")
+
     for race in races:
         rows = predict_race(race, history, w)
-        xrow = X.table_at(ws_all, xrow, rows,
-                          title=f"{race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）")
-        out.append(f"\n## {race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）\n\n"
+        title = f"{race.no}R {race.start} {race.distance or ''}m（{race.light or '時刻不明'}）"
+        xrow = X.table_at(ws, xrow, rows, title=title)
+        out.append(f"\n## {title}\n\n"
                    "| 印 | 馬番 | 馬名 | 騎手 | 脚質 | 勝率 | 3着内率 | 根拠 |\n|---|---|---|---|---|---|---|---|\n")
         for r in rows:
             out.append(f"| {r['印']} | {r['馬番'] or ''} | {r['馬名']} | {r['騎手']} | {r['脚質']} | "
                        f"{r['勝率']:.1%} | {r['3着内率']:.0%} | {r['根拠']} |\n")
     text = "".join(out)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    path = OUT_DIR / f"{date}.md"
-    path.write_text(text, encoding="utf-8")
-    xlsx_path = OUT_DIR / f"{date}.xlsx"
+    md, xlsx_path = OUT_DIR / f"{date}.md", OUT_DIR / f"{date}.xlsx"
+    md.write_text(text, encoding="utf-8")
     wb.save(xlsx_path)
+    return text, md, xlsx_path
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--date", type=dt.date.fromisoformat, help="YYYY-MM-DD（省略すると聞く）")
+    ap.add_argument("--temp", type=float, help="最高気温 ℃（省略すると聞く）")
+    ap.add_argument("--sky", default="", help="晴 / 曇 / 雨")
+    ap.add_argument("--sunshine", type=float, help="予報の日照時間（時間）。--sky の代わり")
+    ap.add_argument("--track", default="", help="良 / 稍重 / 重 / 不良")
+    ap.add_argument("--entries", type=pathlib.Path, help="出馬表 CSV")
+    a = ap.parse_args()
+
+    interactive = a.date is None or a.temp is None
+    date = a.date or dt.date.fromisoformat(ask("日付 (YYYY-MM-DD)", dt.date.today().isoformat()))
+    temp = a.temp if a.temp is not None else float(ask("最高気温 ℃"))
+    sky_word = a.sky or ("" if a.sunshine is not None else ask("天気 (晴/曇/雨)", "晴") if interactive else "晴")
+    track = a.track or (ask("馬場 (良/稍重/重/不良)", "良") if interactive else "良")
+    if track not in C.TRACKS:
+        raise SystemExit(f"馬場は {'/'.join(C.TRACKS)} のどれか")
+    text, md, xlsx_path = run(date, temp, sky_word, a.sunshine, track, a.entries)
     print(text)
-    print(f"→ {path.relative_to(D.ROOT)}, {xlsx_path.relative_to(D.ROOT)}")
+    print(f"→ {md.relative_to(D.ROOT)}, {xlsx_path.relative_to(D.ROOT)}")
 
 
 if __name__ == "__main__":

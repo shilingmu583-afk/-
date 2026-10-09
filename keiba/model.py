@@ -12,15 +12,15 @@ from collections import Counter, defaultdict
 
 from .data import Race, Runner, style_from_corner
 
-FEATURES = ["オッズ", "人気×条件", "枠×条件", "脚質×条件", "騎手×条件", "馬の地力", "馬×条件"]
+FEATURES = ["オッズ", "人気×条件", "枠×条件", "脚質×条件", "騎手×条件", "馬の地力", "馬×条件", "馬×気温"]
 K = 3.0  # 縮小推定の強さ（期待値の単位）
 
 
 class Stats:
-    """キー → [勝ち数, 勝ちの期待値, 3着内数, 3着内の期待値]"""
+    """キー → [勝ち数, 勝ちの期待値, 3着内数, 3着内の期待値, 出走数]"""
 
     def __init__(self):
-        self.c = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
+        self.c = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0, 0])
 
     def add(self, key, n, finish):
         s = self.c[key]
@@ -28,6 +28,7 @@ class Stats:
         s[1] += 1 / n
         s[2] += finish is not None and finish <= 3
         s[3] += min(3, n) / n
+        s[4] += 1
 
     def ae(self, keys, place=True, k=K):
         """keys を粗い順に並べて渡すと、上位から順に縮小推定した A/E を返す。"""
@@ -40,7 +41,20 @@ class Stats:
         return max(prior, 0.05)
 
     def raw(self, key):
-        return self.c.get(key, [0, 0, 0, 0])
+        return self.c.get(key, [0, 0, 0, 0, 0])
+
+
+def cond_keys(L, S, Tb, Y, T, gate="", style="", pop="", jockey=""):
+    """条件（明るさ L・四季 S・気温 Tb・天候 Y・馬場 T）ごとの集計キー。粗い順に並べる。"""
+    return {
+        "人気": [("pop", pop), ("pop", pop, L), ("pop", pop, L, S), ("pop", pop, L, S, Tb)],
+        "枠": [("gate", gate), ("gate", gate, L), ("gate", gate, L, S), ("gate", gate, L, S, Tb),
+               ("gate", gate, L, S, Tb, T)],
+        "脚質": [("style", style), ("style", style, L), ("style", style, L, Tb), ("style", style, L, Tb, Y),
+                ("style", style, L, Tb, Y, T)],
+        "騎手": [("jockey", jockey), ("jockey", jockey, L), ("jockey", jockey, L, S),
+                ("jockey", jockey, L, S, Tb)],
+    }
 
 
 def gate_group(g):
@@ -69,18 +83,12 @@ class History:
         return Counter(st[-5:]).most_common(1)[0][0]
 
     def keys(self, race: Race, r: Runner, style: str):
-        L, S, Y, T = race.light, race.season, race.sky, race.track
-        g = gate_group(r.gate)
-        return {
-            "人気": [("pop", pop_group(r.popularity)), ("pop", pop_group(r.popularity), L),
-                    ("pop", pop_group(r.popularity), L, S, Y)],
-            "枠": [("gate", g), ("gate", g, L), ("gate", g, L, S), ("gate", g, L, S, T)],
-            "脚質": [("style", style), ("style", style, L), ("style", style, L, Y),
-                    ("style", style, L, Y, T)],
-            "騎手": [("jockey", r.jockey), ("jockey", r.jockey, L), ("jockey", r.jockey, L, S)],
-            "馬": [("horse", r.horse)],
-            "馬条件": [("horse", r.horse), ("horse", r.horse, L), ("horse", r.horse, L, S)],
-        }
+        L, S = race.light, race.season
+        g, p = gate_group(r.gate), pop_group(r.popularity)
+        return dict(cond_keys(L, S, race.temp, race.sky, race.track, g, style, p, r.jockey),
+                    馬=[("horse", r.horse)],
+                    馬条件=[("horse", r.horse), ("horse", r.horse, L), ("horse", r.horse, L, S)],
+                    馬気温=[("horse", r.horse), ("horse", r.horse, "気温", race.temp)])
 
     def features(self, race: Race) -> list[list[float]]:
         n = race.field_size()
@@ -103,6 +111,7 @@ class History:
                 math.log(self.s.ae(ks["騎手"])) if r.jockey else 0.0,
                 math.log(horse),
                 math.log(self.s.ae(ks["馬条件"]) / horse),
+                math.log(self.s.ae(ks["馬気温"]) / horse) if race.temp else 0.0,
             ])
         return rows
 

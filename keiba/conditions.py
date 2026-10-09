@@ -4,6 +4,7 @@
 - 明るさ: 発走時刻と大井競馬場の日の入りの差で 昼 / 薄暮 / ナイター
   （大井は通年でトゥインクル（ナイター）開催が多く、日没前後で馬場の見え方・気温が大きく変わる）
 - 天候: その日の東京の日照時間（気象庁）で 晴天 / 薄日 / 曇雨。日照時間が無ければ公式の天候（晴・曇・雨…）で決める
+- 気温: その日の東京の最高気温で 寒い(12℃未満) / 涼しい(12〜20℃) / 暖かい(20〜28℃) / 暑い(28℃以上)
 """
 import datetime as dt
 import math
@@ -16,6 +17,7 @@ SEASONS = ("春", "夏", "秋", "冬")
 LIGHTS = ("昼", "薄暮", "ナイター")
 SKIES = ("晴天", "薄日", "曇雨")
 TRACKS = ("良", "稍重", "重", "不良")
+TEMPS = ("寒い", "涼しい", "暖かい", "暑い")
 
 # 日の入りの前後この分数の間に発走するレースを「薄暮」とする
 TWILIGHT_MIN = 60
@@ -66,6 +68,14 @@ def sky(sunshine_hours, weather: str = "") -> str:
     if any(c in w for c in "雨雪"):
         return "曇雨"
     return ""
+
+
+def temp_band(max_temp) -> str:
+    """最高気温（℃）から 寒い / 涼しい / 暖かい / 暑い。無ければ空文字。"""
+    if max_temp in (None, ""):
+        return ""
+    t = float(max_temp)
+    return "寒い" if t < 12 else "涼しい" if t < 20 else "暖かい" if t < 28 else "暑い"
 
 
 def fmt_minutes(m: float) -> str:
