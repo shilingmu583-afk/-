@@ -7,7 +7,10 @@
 - `data/reference.json` … 踏切・駅構内・駐車場内・作業事故など、道路交通事故以外の参考情報
 - `data/meta.json` … `開始日` と `収集済み最終日`（ここまで収集した最後の日）
 - `scripts/build_xlsx.py` … JSON から Excel を作り直す
-- `全国交通事故データ.xlsx` … 成果物（手で編集しない。JSON を直して作り直す）
+- `scripts/build_map.py` / `scripts/map_template.html` … JSON から地図ページを作る
+- `data/japan_prefectures.json` … 地図の都道府県境界（変更しない）
+- `全国交通事故データ.xlsx`・`交通事故マップ.html` … 成果物（手で編集しない。JSON を直して作り直す）
+- 地図の公開ページ: https://claude.ai/artifact/1iW9xZSRHVd7qrNeCdrzbq
 
 ## 手順
 1. `data/meta.json` の `収集済み最終日` の翌日から、日本時間の「昨日」までを対象日とする（取りこぼした日があればまとめて埋める）。
@@ -21,12 +24,15 @@
 5. 1件ごとに `data/accidents.json` に次の形で追加する:
    ```json
    {"発生日": "YYYY-MM-DD", "確度": "確認済|見出しのみ|要確認", "都道府県": "", "市区町村": "",
-    "場所・道路": "", "事故の種類": "", "死者数": 1, "負傷者数": null, "概要": "", "出典": "", "出典URL": "", "備考": ""}
+    "場所・道路": "", "事故の種類": "", "死者数": 1, "負傷者数": null, "概要": "", "出典": "", "出典URL": "", "備考": "",
+    "緯度": 35.0, "経度": 135.0, "位置の精度": "地点付近|町名付近|道路上（概略）|市区町村の中心"}
    ```
    - 確度: 本文要約で場所・日時・内容を確認できた→確認済／見出しだけ→見出しのみ（発生日を掲載日から推定したら備考に書く）／報道機関以外の出典だけ→要確認
    - 人数が不明なら `null`。場所が不明なら `（場所は未確認）` のように全角かっこで書く
+   - 緯度・経度は小数3桁程度。交差点や町名が分かればその付近、分からなければ市区町村役所付近の値にし、`位置の精度` に書く。都道府県を取り違えないよう注意する
    - 踏切・駅構内・道路外の事故は `data/reference.json` に入れる
 6. `data/meta.json` の `収集済み最終日` を昨日の日付にする。
-7. `python3 scripts/build_xlsx.py` を実行し、xlsx スキルの `scripts/recalc.py` で再計算して `total_errors: 0` を確認する。
+7. `python3 scripts/build_xlsx.py` と `python3 scripts/build_map.py` を実行し、xlsx スキルの `scripts/recalc.py` で Excel を再計算して `total_errors: 0` を確認する。
+   Artifact ツールが使える場合は、`交通事故マップ.html` を `url: https://claude.ai/artifact/1iW9xZSRHVd7qrNeCdrzbq` に publish して公開中の地図も更新する（使えなければ飛ばして、そのことを報告に書く）。
 8. `git add -A && git commit` し、`master` に push する（コミットメッセージ例: `交通事故データ更新: 2026-10-09分 N件`）。
 9. 最後に、追加した件数・死者数・主な事故を日本語で3〜5行にまとめて報告する。見つからなかった日があればそう書く。

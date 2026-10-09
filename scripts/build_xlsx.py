@@ -84,6 +84,7 @@ notes = [
     ("・全件ではありません。全国では1日におよそ5〜10人が交通事故で亡くなっており、ここに載っているのは報道で見つかった一部です", False),
     ("・主に死亡事故です（けがだけの事故はほとんど報道されないため）", False),
     ("・「地図」列は、住所の文字列で Google マップを検索するリンクです。正確な事故地点ではありません", False),
+    ("・「緯度」「経度」は町名・交差点が分かるものはその付近、それ以外は市区町村の中心付近の概略値です（「位置の精度」列を参照）。Google マイマップなどに読み込めます", False),
     ("", False),
     ("「確度」列の意味", True),
     ("確認済：報道本文の要約で、場所・日時・内容を確認できたもの", False),
@@ -102,13 +103,13 @@ for i, (t, b) in enumerate(notes, 1):
 # 事故一覧
 ws = wb.create_sheet("事故一覧")
 cols = ["No", "発生日", "曜日", "都道府県", "市区町村", "場所・道路", "地図", "事故の種類", "死者数", "負傷者数",
-        "概要", "確度", "出典", "出典URL", "備考"]
-header(ws, cols, [5, 11, 6, 10, 16, 32, 8, 24, 8, 9, 48, 11, 24, 14, 28])
+        "概要", "確度", "出典", "出典URL", "備考", "緯度", "経度", "位置の精度"]
+header(ws, cols, [5, 11, 6, 10, 16, 32, 8, 24, 8, 9, 48, 11, 24, 14, 28, 10, 10, 16])
 for n, a in enumerate(acc, 1):
     i = n + 1
     vals = [n, a["_d"], DOW[a["_d"].weekday()], a["都道府県"], a["市区町村"], a["場所・道路"],
             hyperlink(gmap(a), "地図"), a["事故の種類"], a["死者数"], a["負傷者数"], a["概要"], a["確度"],
-            a["出典"], hyperlink(a["出典URL"], "記事を開く"), a["備考"]]
+            a["出典"], hyperlink(a["出典URL"], "記事を開く"), a["備考"], a.get("緯度"), a.get("経度"), a.get("位置の精度", "")]
     for c, v in enumerate(vals, 1):
         x = ws.cell(row=i, column=c, value=v)
         x.font, x.alignment, x.border = base, wrap, border
@@ -118,7 +119,7 @@ for n, a in enumerate(acc, 1):
     for c in (1, 3, 9, 10, 12):
         ws.cell(row=i, column=c).alignment = center
 last = len(acc) + 1
-tbl = Table(displayName="事故一覧", ref=f"A1:O{last}")
+tbl = Table(displayName="事故一覧", ref=f"A1:R{last}")
 tbl.tableStyleInfo = TableStyleInfo(name="TableStyleLight1", showRowStripes=False)
 ws.add_table(tbl)
 s = last + 2

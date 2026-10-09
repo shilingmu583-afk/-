@@ -1,0 +1,302 @@
+<title>全国交通事故マップ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&display=swap">
+<style>
+/* Layout: 道路標識のような落ち着いた紺と警告の赤。左に地図、右に事故の一覧（狭い画面では縦に並ぶ） */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #18222e;
+  --muted: #5b6878;
+  --line: #d6dde5;
+  --land: #e4e9ef;
+  --land-hi: #d3dbe5;
+  --border: #ffffff;
+  --sea: #f3f5f7;
+  --navy: #1e3a5f;
+  --alert: #c8281e;
+  --alert-soft: rgba(200, 40, 30, .14);
+  --warn: #a86a00;
+  --ok-bg: #e3efe1;  --ok-fg: #2f5d2a;
+  --hd-bg: #fbf0d4;  --hd-fg: #7a5600;
+  --ck-bg: #f8e1dc;  --ck-fg: #8a2b1d;
+  --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --f-body: "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161d; --surface: #18202a; --ink: #e6ebf1; --muted: #9aa7b6; --line: #2a3542;
+    --land: #222d3a; --land-hi: #2d3a4a; --border: #11161d; --sea: #11161d; --navy: #8fb3dc;
+    --alert: #ff5a4c; --alert-soft: rgba(255, 90, 76, .18); --warn: #e0a640;
+    --ok-bg: #1f3320; --ok-fg: #9fd39a; --hd-bg: #3a2f12; --hd-fg: #f0cf7a; --ck-bg: #3d1f1a; --ck-fg: #f3a497;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161d; --surface: #18202a; --ink: #e6ebf1; --muted: #9aa7b6; --line: #2a3542;
+  --land: #222d3a; --land-hi: #2d3a4a; --border: #11161d; --sea: #11161d; --navy: #8fb3dc;
+  --alert: #ff5a4c; --alert-soft: rgba(255, 90, 76, .18); --warn: #e0a640;
+  --ok-bg: #1f3320; --ok-fg: #9fd39a; --hd-bg: #3a2f12; --hd-fg: #f0cf7a; --ck-bg: #3d1f1a; --ck-fg: #f3a497;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.6; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 28px; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+h1 { font-family: var(--f-display); font-weight: 900; font-size: 1.6rem; line-height: 1.25; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: .85rem; }
+.stats { display: flex; gap: 20px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; }
+.stat b { font-family: var(--f-display); font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat b.red { color: var(--alert); }
+.stat span { color: var(--muted); font-size: .75rem; letter-spacing: .06em; }
+.days { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: .8rem; cursor: pointer; font-variant-numeric: tabular-nums; }
+.chip small { color: var(--muted); margin-left: 4px; }
+.chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--bg); }
+.chip[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.chip:focus-visible, button:focus-visible, a:focus-visible, .item:focus-visible { outline: 2px solid var(--alert); outline-offset: 2px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.mapbox { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+#map { display: block; width: 100%; height: auto; aspect-ratio: 850 / 680; max-width: 100%; touch-action: none; cursor: grab; background: var(--sea); }
+#map.dragging { cursor: grabbing; }
+.pref { fill: var(--land); stroke: var(--border); stroke-width: .6; vector-effect: non-scaling-stroke; }
+.pref.has { fill: var(--land-hi); }
+.dot { fill: var(--alert); fill-opacity: .85; stroke: var(--surface); stroke-width: 1.2; vector-effect: non-scaling-stroke; cursor: pointer; }
+.dot.tentative { fill: var(--surface); stroke: var(--warn); stroke-width: 2; fill-opacity: 1; }
+.dot.sel { stroke: var(--ink); stroke-width: 2.5; }
+.halo { fill: var(--alert-soft); pointer-events: none; }
+.ctrl { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.ctrl button { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: 700 1.05rem var(--f-body); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+.legend .l1 { background: var(--alert); }
+.legend .l2 { border: 2px solid var(--warn); background: var(--surface); }
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.card h2 { font-family: var(--f-display); font-size: 1.05rem; margin: 0 0 2px; line-height: 1.4; text-wrap: balance; }
+.card .when { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.card dl { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 4px 10px; margin: 10px 0; font-size: .85rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; overflow-wrap: anywhere; }
+.card p { margin: 8px 0; }
+.links { display: flex; gap: 14px; flex-wrap: wrap; font-size: .85rem; }
+.links a { color: var(--navy); font-weight: 700; }
+.empty { color: var(--muted); font-size: .85rem; margin: 0; }
+.badge { display: inline-block; font-size: .7rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; letter-spacing: .04em; white-space: nowrap; }
+.b-ok { background: var(--ok-bg); color: var(--ok-fg); }
+.b-hd { background: var(--hd-bg); color: var(--hd-fg); }
+.b-ck { background: var(--ck-bg); color: var(--ck-fg); }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; max-height: 560px; overflow-y: auto; }
+.list-h { position: sticky; top: 0; background: var(--surface); padding: 10px 16px; border-bottom: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+.item { display: grid; grid-template-columns: 3.4em minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; padding: 9px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.item:last-child { border-bottom: 0; }
+.item:hover, .item.sel { background: var(--bg); }
+.item .d { color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.item .t { font-weight: 700; overflow-wrap: anywhere; }
+.item .k { grid-column: 2 / 4; color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.item .n { color: var(--alert); font-weight: 700; font-size: .8rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+footer { color: var(--muted); font-size: .75rem; line-height: 1.7; }
+footer p { margin: 0; max-width: 80ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>全国交通事故マップ</h1>
+      <p class="sub" id="period"></p>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="s-n">0</b><span>件</span></div>
+      <div class="stat"><b id="s-d" class="red">0</b><span>死者（判明分）</span></div>
+      <div class="stat"><b id="s-p">0</b><span>都道府県</span></div>
+    </div>
+  </header>
+
+  <nav class="days" id="days" aria-label="日付で絞り込む"></nav>
+
+  <div class="main">
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 850 680" role="img" aria-label="日本地図上の事故発生地点">
+        <g id="vp">
+          <g id="prefs"></g>
+          <g id="dots"></g>
+        </g>
+      </svg>
+      <div class="ctrl">
+        <button type="button" id="zin" aria-label="拡大">＋</button>
+        <button type="button" id="zout" aria-label="縮小">－</button>
+        <button type="button" id="zreset" aria-label="全体を表示">⤢</button>
+      </div>
+      <div class="legend">
+        <span><i class="l1"></i>確認済の事故（円の大きさ＝死者数）</span>
+        <span><i class="l2"></i>見出しのみ・要確認</span>
+        <span>ドラッグで移動、ホイールや＋－で拡大</span>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card" id="detail" aria-live="polite">
+        <p class="empty">地図の点か一覧の行を選ぶと、事故の詳細が出ます。</p>
+      </div>
+      <div class="list" id="list"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>報道機関（NHK・時事通信・地方紙・地方局など）と警察の発表から見つかった事故だけを載せています。全件ではなく、ほとんどが死亡事故です。点の位置は町名・交差点が分かるものはその付近、それ以外は市区町村の中心付近で、正確な事故地点ではありません。境界データ：国土地理院「地球地図日本」（jpn-atlas 経由）。</p>
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const NS = "http://www.w3.org/2000/svg";
+const PREFS = "北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県 茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県 新潟県 富山県 石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県 三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県 鳥取県 島根県 岡山県 広島県 山口県 徳島県 香川県 愛媛県 高知県 福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県".split(" ");
+const DOW = "日月火水木金土";
+const $ = id => document.getElementById(id);
+const pts = DATA.points;
+let day = "all", selected = null;
+
+function fmt(iso, withDow) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const w = DOW[new Date(y, m - 1, d).getDay()];
+  return withDow ? `${m}/${d}（${w}）` : `${m}/${d}`;
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function confClass(c) { return c === "確認済" ? "b-ok" : c === "見出しのみ" ? "b-hd" : "b-ck"; }
+
+// 期間
+$("period").textContent = `${fmt(DATA.meta["開始日"], true)} 〜 ${fmt(DATA.meta["収集済み最終日"], true)} に発生、報道された事故`;
+
+// 都道府県
+const prefG = $("prefs");
+for (const [id, d] of Object.entries(DATA.prefs)) {
+  const p = document.createElementNS(NS, "path");
+  p.setAttribute("d", d); p.setAttribute("class", "pref"); p.dataset.pref = PREFS[+id - 1];
+  prefG.appendChild(p);
+}
+
+// 日付チップ
+const days = [];
+for (let t = new Date(DATA.meta["開始日"] + "T00:00:00"), e = new Date(DATA.meta["収集済み最終日"] + "T00:00:00"); t <= e; t.setDate(t.getDate() + 1)) {
+  days.push(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`);
+}
+function chip(value, label, count) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.dataset.day = value;
+  b.innerHTML = `${label}<small>${count}</small>`;
+  b.addEventListener("click", () => { day = value; render(); });
+  return b;
+}
+$("days").appendChild(chip("all", "全期間", pts.length));
+for (const d of days.slice().reverse()) $("days").appendChild(chip(d, fmt(d, true), pts.filter(p => p.date === d).length));
+
+// 拡大・移動
+const svg = $("map"), vp = $("vp");
+let k = 1, tx = 0, ty = 0;
+function apply() {
+  vp.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
+  for (const c of $("dots").querySelectorAll("circle")) c.setAttribute("r", c.dataset.r / Math.sqrt(k));
+}
+function clampK(v) { return Math.min(24, Math.max(1, v)); }
+function zoomAt(f, cx, cy) {
+  const nk = clampK(k * f); const r = nk / k;
+  tx = cx - (cx - tx) * r; ty = cy - (cy - ty) * r; k = nk; apply();
+}
+function svgPoint(ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+svg.addEventListener("wheel", ev => { ev.preventDefault(); const p = svgPoint(ev); zoomAt(ev.deltaY < 0 ? 1.25 : 0.8, p.x, p.y); }, { passive: false });
+let drag = null;
+svg.addEventListener("pointerdown", ev => {
+  if (ev.target.classList.contains("dot")) return;
+  drag = { p: svgPoint(ev), tx, ty }; svg.setPointerCapture(ev.pointerId); svg.classList.add("dragging");
+});
+svg.addEventListener("pointermove", ev => {
+  if (!drag) return; const p = svgPoint(ev);
+  tx = drag.tx + (p.x - drag.p.x); ty = drag.ty + (p.y - drag.p.y); apply();
+});
+const endDrag = () => { drag = null; svg.classList.remove("dragging"); };
+svg.addEventListener("pointerup", endDrag); svg.addEventListener("pointercancel", endDrag);
+$("zin").onclick = () => zoomAt(1.6, 425, 340);
+$("zout").onclick = () => zoomAt(0.625, 425, 340);
+$("zreset").onclick = () => { k = 1; tx = 0; ty = 0; apply(); };
+function focusPoint(p) {
+  k = Math.max(k, 5); tx = 425 - p.x * k; ty = 340 - p.y * k; apply();
+}
+
+// 詳細
+function showDetail(p) {
+  selected = p ? p.no : null;
+  for (const c of $("dots").querySelectorAll(".dot")) c.classList.toggle("sel", +c.dataset.no === selected);
+  for (const it of $("list").querySelectorAll(".item")) it.classList.toggle("sel", +it.dataset.no === selected);
+  if (!p) { $("detail").innerHTML = '<p class="empty">地図の点か一覧の行を選ぶと、事故の詳細が出ます。</p>'; return; }
+  const num = v => v == null ? "不明" : `${v}人`;
+  const gmap = `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}`;
+  $("detail").innerHTML = `
+    <div class="when">${fmt(p.date, true)}　<span class="badge ${confClass(p.conf)}">${esc(p.conf)}</span></div>
+    <h2>${esc(p.pref)} ${esc(p.city)}</h2>
+    <dl>
+      <dt>場所</dt><dd>${esc(p.place)}</dd>
+      <dt>種類</dt><dd>${esc(p.kind)}</dd>
+      <dt>死者</dt><dd>${num(p.dead)}</dd>
+      <dt>負傷者</dt><dd>${num(p.inj)}</dd>
+      <dt>点の位置</dt><dd>${esc(p.precision || "—")}</dd>
+      <dt>出典</dt><dd>${esc(p.src)}</dd>
+      ${p.note ? `<dt>備考</dt><dd>${esc(p.note)}</dd>` : ""}
+    </dl>
+    <p>${esc(p.summary)}</p>
+    <div class="links"><a href="${esc(p.url)}" target="_blank" rel="noopener">記事を開く ↗</a><a href="${gmap}" target="_blank" rel="noopener">Google マップで見る ↗</a></div>`;
+}
+
+// 描画
+function render() {
+  for (const b of $("days").children) b.setAttribute("aria-pressed", String(b.dataset.day === day));
+  const vis = pts.filter(p => day === "all" || p.date === day);
+  const dead = vis.reduce((s, p) => s + (p.dead || 0), 0);
+  const prefSet = new Set(vis.map(p => p.pref));
+  $("s-n").textContent = vis.length; $("s-d").textContent = dead; $("s-p").textContent = prefSet.size;
+  for (const path of prefG.children) path.classList.toggle("has", prefSet.has(path.dataset.pref));
+
+  const g = $("dots"); g.replaceChildren();
+  // 大きい円を下に
+  for (const p of vis.slice().sort((a, b) => (b.dead || 0) - (a.dead || 0))) {
+    const r = 3 + 2.4 * Math.sqrt(p.dead || 1);
+    const confirmed = p.conf === "確認済";
+    if (confirmed && (p.dead || 0) >= 2) {
+      const h = document.createElementNS(NS, "circle");
+      h.setAttribute("cx", p.x); h.setAttribute("cy", p.y); h.dataset.r = r * 2.1; h.setAttribute("class", "halo");
+      g.appendChild(h);
+    }
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.dataset.r = r; c.dataset.no = p.no;
+    c.setAttribute("class", "dot" + (confirmed ? "" : " tentative"));
+    const t = document.createElementNS(NS, "title");
+    t.textContent = `${fmt(p.date)} ${p.pref}${p.city}　${p.kind}　死者${p.dead ?? "不明"}`;
+    c.appendChild(t);
+    c.addEventListener("click", () => showDetail(p));
+    g.appendChild(c);
+  }
+
+  const list = $("list"); list.replaceChildren();
+  const h = document.createElement("div"); h.className = "list-h";
+  h.textContent = `${day === "all" ? "全期間" : fmt(day, true)}の事故 ${vis.length}件（新しい順）`;
+  list.appendChild(h);
+  for (const p of vis.slice().sort((a, b) => b.date.localeCompare(a.date) || a.no - b.no)) {
+    const it = document.createElement("div");
+    it.className = "item"; it.tabIndex = 0; it.dataset.no = p.no; it.setAttribute("role", "button");
+    it.innerHTML = `<span class="d">${fmt(p.date)}</span><span class="t">${esc(p.pref)} ${esc(p.city)}</span><span class="n">${p.dead == null ? "" : "死者" + p.dead}</span><span class="k">${esc(p.kind)}　<span class="badge ${confClass(p.conf)}">${esc(p.conf)}</span></span>`;
+    const go = () => { showDetail(p); focusPoint(p); };
+    it.addEventListener("click", go);
+    it.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+    list.appendChild(it);
+  }
+  if (selected && !vis.some(p => p.no === selected)) showDetail(null); else showDetail(pts.find(p => p.no === selected) || null);
+  apply();
+}
+render();
+</script>
