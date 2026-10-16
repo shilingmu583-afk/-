@@ -38,13 +38,38 @@ def project(lon, lat):
     return round(_DX + _S * px, 2), round(_DY - _S * py, 2)
 
 
+def compress_path(d):
+    """絶対座標の SVG パス（M/L/Z、小数1桁）を相対座標に書き換えてサイズを減らす。見た目は変わらない。"""
+    import re
+
+    def t(n):  # 10倍した整数 -> 文字列（先頭の0を省く）
+        sign = "-" if n < 0 else ""
+        a = abs(n)
+        i, f = divmod(a, 10)
+        return sign + (str(i) if i else "") + ("." + str(f) if f else "") if (i or f) else "0"
+
+    out = []
+    for sub in d.split("M")[1:]:
+        pts = [(round(float(x) * 10), round(float(y) * 10)) for x, y in re.findall(r"(-?[\d.]+),(-?[\d.]+)", sub)]
+        if not pts:
+            continue
+        x0, y0 = pts[0]
+        segs, px, py = [], x0, y0
+        for x, y in pts[1:]:
+            if (x, y) != (px, py):
+                segs.append(t(x - px) + "," + t(y - py))
+                px, py = x, y
+        out.append("M" + t(x0) + "," + t(y0) + ("l" + " ".join(segs) if segs else "") + "z")
+    return "".join(out)
+
+
 def load(name):
     return json.loads((ROOT / "data" / name).read_text(encoding="utf-8"))
 
 
 acc = sorted(load("accidents.json"), key=lambda a: (a["発生日"], a["都道府県"]))
 meta = load("meta.json")
-prefs = load("japan_prefectures.json")
+prefs = {k: compress_path(v) for k, v in load("japan_prefectures.json").items()}
 
 points = []
 skipped = 0
