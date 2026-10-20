@@ -50,7 +50,7 @@ ul{margin:1px 0;padding-left:12px}
 <b>土粒子</b> 大(砂礫):透水大・強度大・沈下小。小(粘土・シルト):保水・圧密沈下大・強度小<br>
 <b>地下水</b> 水位↑→間隙水圧u↑→有効応力σ'↓→せん断強さ↓→支持力↓、液状化
 </div>
-<div class="f"><b>σ = σ' + u</b>(全応力=有効応力+間隙水圧)<br><b>τ = c' + σ' tanφ'</b>(クーロンの破壊規準)<br>水は抵抗しない、土は抵抗する<br>黒板:σv=γt H₁+γsat H₂、σ'v=σv−γw H₂。水位がΔh<b>低下</b>すると σ'v は (γt−γsat+γw)Δh 増加(γt=1.7、γsat=1.8、γw=1.0 → <span class="r">0.9Δh</span>)</div>
+<div class="f"><b>σ = σ' + u</b>(全応力=有効応力+間隙水圧)<br><b>τ = c' + σ' tanφ'</b>(クーロンの破壊規準)<br>水は抵抗しない、土は抵抗する<br>黒板:σv=γt H₁+γsat H₂、σ'v=σv−γw H₂。水位がΔh<b>低下</b>すると σ'v は (γt−γsat+γw)Δh 増加(γt=1.7、γsat=1.8、γw=1.0 → <span class="r">0.9Δh</span>)<br>γ'=γsat−γw、σ'=σ−u、σ=γt(z−H)+γsat H、u=γw H → σ'=γt(z−H)+γ'H。τf=c+σ tanφ(c:粘着力、φ:内部摩擦角)</div>
 
 <h2>3. 斜面災害の定義(暗記)</h2>
 <div class="b">
@@ -99,8 +99,8 @@ SR = c'/cosα + {γt(z−H)+(γsat−γw)H} cosα tanφ'<br>
 <div class="f">Fs = [c'/cos²α + {γt(z−H)+(γsat−γw)H} tanφ'] / [{γt(z−H)+γsat H} tanα]</div>
 ※SAはγsat H、SRは(γsat−γw)H(水に浮力、揚圧力U=γw H cosα)<br>
 <table><tr><th>特別な場合</th><th>式</th></tr>
-<tr><td>砂 c'=0、H=0</td><td>Fs=tanφ'/tanα → <span class="r">α≦φ'で安定</span></td></tr>
-<tr><td>粘土 φ=0</td><td>Fs=2c/(γt z sin2α) → <span class="r">z&lt;2c/(γt sin2α)で安定</span></td></tr>
+<tr><td>砂 c'=0、H=0</td><td>Fs=tanφ'/tanα → <span class="r">α≦φ'で安定</span>(安息角=自然にとりうる土の最大傾斜角。粘着力のない砂では内部摩擦角に一致)</td></tr>
+<tr><td>粘土 φ=0</td><td>Fs=2c/(γt z sin2α) → <span class="r">z&lt;2c/(γt sin2α)で安定</span>(α&lt;½sin⁻¹(2c/γt z)とも書ける。c一定なら限界深さが必ず存在)</td></tr>
 <tr><td>H=z、c'=0</td><td>Fs=(γsat−γw)tanφ'/(γsat tanα)</td></tr></table>
 例:φ'=30°、α=28°、γ=17.6、γw=9.8:H=0→1.09、H=z→<span class="r">0.48</span>(水位上昇でα&lt;φ'でも不安定)。砂ではzが約分される
 </div>
