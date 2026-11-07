@@ -1,0 +1,204 @@
+<title>地盤環境工学 暗記カード</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+Antique:wght@700;900&display=swap">
+<style>
+/* layout: a single study card on graph paper (like the notebook), filters above, controls below */
+:root{
+  --bg:#eef1ee; --paper:#fbfcfa; --grid:#dde6e2; --fg:#1d2522; --muted:#5b6762; --line:#cfd8d3;
+  --accent:#1f5d7a; --accent-soft:#dbe9ef; --know:#2f7d4f; --know-soft:#dcefe2; --again:#b5552b; --again-soft:#f6e3d8; --pen:#1b3f8f;
+  --f-display:"Zen Kaku Gothic Antique","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  --f-body:"BIZ UDPGothic","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --paper:#1e2522; --grid:#28312d; --fg:#e7ece9; --muted:#9daaa4; --line:#323c37;
+  --accent:#7fbbd6; --accent-soft:#1f3540; --know:#79c796; --know-soft:#1d3427; --again:#e8946b; --again-soft:#3b2519; --pen:#9db7f2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --paper:#1e2522; --grid:#28312d; --fg:#e7ece9; --muted:#9daaa4; --line:#323c37;
+  --accent:#7fbbd6; --accent-soft:#1f3540; --know:#79c796; --know-soft:#1d3427; --again:#e8946b; --again-soft:#3b2519; --pen:#9db7f2; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.7}
+.wrap{max-width:760px;margin:0 auto;padding-block:22px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+h1{font-family:var(--f-display);font-weight:900;font-size:clamp(22px,4vw,30px);margin:0;line-height:1.3}
+.sub{margin:2px 0 0;color:var(--muted);font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--paper);color:var(--fg);padding:5px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--paper);font-weight:700}
+.chip:focus-visible,button:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.stat{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+.stat b{color:var(--fg)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--know);width:0;transition:width .3s}
+.card{position:relative;min-height:320px;border:1px solid var(--line);border-radius:6px;cursor:pointer;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;display:grid;grid-template-rows:auto 1fr auto;padding:16px 20px;gap:10px;box-shadow:0 1px 0 var(--line)}
+.meta{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted)}
+.cat{font-weight:700;color:var(--accent);letter-spacing:.04em}
+.src{border:1px solid var(--line);background:var(--paper);padding:0 8px;border-radius:999px}
+.face{align-self:center;min-width:0}
+.q{font-family:var(--f-display);font-weight:700;font-size:clamp(20px,3.6vw,26px);line-height:1.5;text-wrap:balance;margin:0}
+.a{font-size:16px;line-height:1.85;margin:0;color:var(--fg)}
+.a b{color:var(--pen)}
+.a .warn{display:block;margin-top:8px;font-size:14px;color:var(--again)}
+.hint{font-size:13px;color:var(--muted);text-align:center}
+.card.flipped{border-color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.card.anim{animation:flip .28s ease}}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(80deg)}100%{transform:rotateX(0)}}
+.controls{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:10px}
+button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--paper);color:var(--fg);padding:10px 14px;border-radius:6px;cursor:pointer}
+button.again{background:var(--again-soft);border-color:var(--again);color:var(--again)}
+button.know{background:var(--know-soft);border-color:var(--know);color:var(--know)}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
+.tools button{font-weight:400;font-size:14px;padding:6px 12px}
+.tools button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.empty{align-self:center;text-align:center;color:var(--muted)}
+.keys{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:540px){.controls{grid-template-columns:1fr 1fr}.controls .nav{order:3}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>地盤環境工学 暗記カード</h1>
+    <p class="sub">カードをタップすると答えが出ます。「覚えた」にしたカードは、このブラウザに記録されます。試験は 11/10。</p>
+  </header>
+
+  <div class="chips" id="cats" role="group" aria-label="範囲"></div>
+
+  <div class="row">
+    <div class="tools">
+      <button type="button" id="onlyLeft" aria-pressed="false">まだのカードだけ</button>
+      <button type="button" id="shuffle">シャッフル</button>
+      <button type="button" id="reset">記録をリセット</button>
+    </div>
+    <div class="stat" id="stat"></div>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="prog"></i></div>
+
+  <div class="card" id="card" tabindex="0" role="button" aria-label="カード。押すと答えを表示">
+    <div class="meta"><span class="cat" id="cCat"></span><span class="src" id="cSrc"></span></div>
+    <div class="face" id="face"></div>
+    <div class="hint" id="hint">タップで答え</div>
+  </div>
+
+  <div class="controls">
+    <button type="button" class="nav" id="prev" aria-label="前のカード">←</button>
+    <button type="button" class="again" id="again">まだ</button>
+    <button type="button" class="know" id="know">覚えた</button>
+    <button type="button" class="nav" id="next" aria-label="次のカード">→</button>
+  </div>
+  <p class="keys">キーボード:スペースで裏返す、← → で移動、1 で「まだ」、2 で「覚えた」。</p>
+  <p class="keys" id="reset2" hidden>もう一度押すと、覚えた記録をすべて消します。</p>
+</div>
+
+<script>
+(function(){
+// [範囲, 問題, 答え, 出典]  出典:ノート=あなたのノート / 授業=スライド / 参考=他の人のまとめ
+var C=[
+["地質","沖積層とは?","<b>河川作用によって堆積した</b>粘土・シルト・砂・礫などの堆積物(侵食・運搬・堆積作用)。<br>完新世。約1.8万年前より後にできた。新しく、<b>正規圧密で軟弱</b>。","ノート"],
+["地質","洪積層とは?","<b>河川や海の通常の作用によっては説明できない、広域に分布する</b>地表の堆積物。<br>更新世。約1.8万年前より前。何度も水位が変化して<b>過圧密 → 古く硬い</b>。","ノート"],
+["地質","洪積層と沖積層の境は?","<b>約1.8万年前</b>(最終氷期の最盛期。海面は約−120m)。それより前が洪積層、後が沖積層。","授業"],
+["地質","第四紀・更新世・完新世の年代は?","第四紀:258万年前〜現在(人類が進化・拡散・活動している時代)<br>更新世:<b>258万〜1.17万年前</b>(大部分が氷河期)<br>完新世:<b>1.17万年前〜現在</b>(最終氷河期のあと)","授業"],
+["地質","軟弱地盤(沖積層)の形成史 Ⅰ・Ⅱ・Ⅲ は?","Ⅰ 2万〜1.2万年前:海面−120mから急上昇、河川の中流、<b>砂・礫</b><br>Ⅱ 1.2万〜6千年前:+4〜5mまで急上昇、浅い海、<b>粘性土</b><br>Ⅲ 6千年前〜現在:+4〜5mから下降、河川の中下流、<b>砂・礫・腐植土</b>","授業"],
+["地形","扇状地の地盤は?","山地から出た<b>砂礫が谷の出口に堆積</b>。透水性が高く、<b>比較的良好で締まった地盤</b>(砂礫・玉石・転石が主体)。<br>ただし大雨時は<b>土石流に注意</b>。","ノート"],
+["地形","自然堤防の地盤は?","氾濫で運ばれた砂礫が川沿いに堆積。<b>地盤が固く、水はけも良い</b>。","ノート"],
+["地形","後背湿地の地盤は?","自然堤防の背後に細かい泥が堆積。水分を保ちやすく<b>極めて軟弱</b>。","ノート"],
+["地形","三角州の地盤は?","河口に細かい泥・粘土が堆積。<b>全般的に標高は低く、地盤は軟弱</b>。","ノート"],
+["地形","旧河道の地盤は?","もとは川で、流路の変化で切り離された土地。<b>排水が悪く、地盤は軟弱</b>。","ノート"],
+["地形","丘陵地と台地の地盤は?","丘陵地:<b>概ね安定した地盤</b><br>台地:<b>比較的良好な地盤</b>(洪積層。武蔵野台地・下総台地など)","ノート"],
+["地形","谷底低地と埋立地の地盤は?","谷底低地:<b>極めて軟弱</b>。水がたまりやすい。<br>埋立地:人工的に土砂を積み上げた。正規圧密で<b>軟弱、液状化しやすい</b>。","ノート"],
+["地形","地盤の良い順に並べると?","良:<b>扇状地・自然堤防</b><br>→ 丘陵地 → 台地<br>→ 埋立地・旧河道・三角州<br>悪:<b>谷底低地・後背湿地</b>","ノート"],
+["地形","川の上流から海までの地形の順は?","山地 → <b>扇状地</b> → <b>自然堤防</b>・湿地・湖沼 → <b>後背湿地</b> → (海岸の砂丘) → <b>三角州</b> → 海","ノート"],
+["地形","【中間-1】支持地盤に適した地形・適さない地形を3つずつ","適:<b>台地・丘陵地・扇状地</b>(自然堤防でも可)<br>不適:<b>後背湿地・谷底低地・三角州</b>(旧河道・埋立地でも可)","参考"],
+["地形","【中間-1】土粒子の大小は地盤の適性にどう影響する?","大(砂礫):<b>透水大・強度大・沈下小</b> → 支持地盤に適する<br>小(粘土・シルト):<b>保水・強度小・圧密沈下大</b> → 軟弱で適さない","ノート"],
+["地形","透水性が大きいと、なぜ強度が下がりにくい?","σ' = σ − u。水がすぐ抜けるので<b>間隙水圧 u がたまらず</b>、有効応力 σ' が保たれる。<br>保水(粘土)はこの逆で、u が残り<b>強度が小さくなる</b>。<span class='warn'>ノートの「保水は…強度が大きくなる」は逆。正しくは「小さくなる」</span>","ノート"],
+["地形","【中間-1】地下水は地盤の適性にどう影響する?","水位が上がる → <b>間隙水圧 u が増える → 有効応力 σ' = σ − u が減る → せん断強さ τf = c' + σ' tanφ' が下がる</b> → 支持力低下。砂は地震時に液状化も起きやすい。","参考"],
+["地形","地名から地盤を見分けるヒントは?","良い:台・丘・岡・山・坂・岩・林・寺<br>悪い:<b>さんずい偏</b>(池・沢・津・洲・浜)、谷・窪・下・溝・沼、水辺の動植物(荻・蒲・菅・蓮・鶴)、川・岸・橋・堤・港","参考"],
+["斜面災害","斜面と法面の違いは?","斜面:<b>自然にできたもの</b><br>法面:<b>人が手を加えたもの</b>(切土・盛土)","ノート"],
+["斜面災害","盛土・切土をするのはなぜ?","土を運ぶ量を減らして<b>運搬コストを抑える</b>ため。","ノート"],
+["斜面災害","法面対策工の例は?","<b>ロックボルト</b>:一体化して支える<br><b>吹付法枠</b>:表面を押さえ、草を生やして自然感を出す<br>永久アンカー+独立受圧板","ノート"],
+["斜面災害","地すべりの定義は?","<b>主として地質構造的特性と力学要因</b>によって、斜面が<b>比較的広い範囲にわたって滑動</b>するもの。(ゆっくり大きく)","ノート"],
+["斜面災害","土石流の定義は?","<b>山体を構成する土砂や礫の一部が水と混合</b>し、河床堆積物とともに<b>渓岸を削りながら急速(5〜20 m/s)に流下</b>する現象。","ノート"],
+["斜面災害","斜面崩壊の定義は?","地すべりに比べ<b>小規模</b>で、<b>急傾斜部分で比較的急速に</b>斜面が崩壊するもの(広義では地すべりも含む)。(突然小さく速く)","ノート"],
+["斜面災害","急傾斜地崩壊危険区域とは?","<b>傾斜30°以上・高さ5m以上</b>のがけで、<b>5戸以上</b>の人家や公共施設に被害の恐れがある区域。<b>県知事が指定</b>し、一定の行為を禁止・制限。","ノート"],
+["斜面災害","地すべり vs 斜面崩壊:土質と地形","地すべり:<b>粘性土</b>をすべり面に、<b>5〜20°の緩傾斜</b><br>斜面崩壊:<b>砂質土</b>(マサ・ヨナ・シラス)、<b>20°以上の急傾斜</b>(0次谷・谷頭部)","参考"],
+["斜面災害","地すべり vs 斜面崩壊:活動と速度","地すべり:継続性・再発性、<b>0.01〜10 mm/day</b>、土塊は原形を保つ、1〜100 ha<br>斜面崩壊:突発的、<b>10 mm/day以上</b>、土塊は攪乱される、小規模","参考"],
+["斜面災害","地すべり vs 斜面崩壊:誘因と徴候","地すべり:<b>地下水</b>の影響大。亀裂・陥没・隆起などの<b>徴候あり</b><br>斜面崩壊:<b>降雨(降雨強度)</b>。<b>前兆なし</b>","参考"],
+["斜面災害","斜面が不安定になる3つの原因は?","① <b>斜面勾配の不適</b>(人為的原因):切土・盛土の設計勾配<br>② <b>滑動荷重の増加</b>(自然的原因):降雨で重量↑、地震、法肩の構造物<br>③ <b>せん断強度の低下</b>(自然的原因):降雨・地下水で間隙水圧↑","ノート"],
+["斜面災害","砂防ダムの役割と弱点は?","土砂を止める(重力式・スリット式)。<b>天板付近まで土砂がたまると機能しなくなる</b>。","参考"],
+["破壊形態","すべり面の3つの形とその地盤は?","<b>円弧</b>:厚く均質な粘性土<br><b>平面(直線)</b>:粘着力が小さい砂質土、硬い基盤上の薄い表層<br><b>非円弧</b>:弱い層や割れ目に沿う","ノート"],
+["破壊形態","【中間-2】直線(平面)すべりの地質と理由","地質:<b>粘着力のない砂質土</b>の表層、硬い基盤の上の薄い表層土<br>理由:c=0 では <b>Fs = tanφ/tanα で深さ z に関係しない</b>。土被り圧の小さい表層から、斜面に平行な浅い面で滑る。","参考"],
+["破壊形態","【中間-2】円弧すべりの地質と理由","地質:<b>粘着力が大きい粘性土</b>(φ≈0)の、厚く均質な地盤<br>理由:φ=0 では Fs = 2c/(γt z sin2α) で<b>深いほど安全率が小さい</b>。深さ方向の強さの増加がせん断力の増加より小さく、深い位置を通る回転(円弧)のすべりになる。","参考"],
+["破壊形態","斜面先破壊とは?","斜面先部は釣合い状態でも<b>応力集中</b>が起こりやすく、<b>土被り圧も小さい</b>ので、<b>砂質土</b>の斜面では浅いすべりが斜面先から発生する。","ノート"],
+["破壊形態","底部破壊とは?","<b>粘着力が大きい土</b>の斜面では、深さ方向の<b>せん断強さの増加がせん断力の増加より小さい</b>ので、破壊面は<b>斜面先より前方</b>を通り、<b>深い位置</b>に現れる。","ノート"],
+["破壊形態","斜面内破壊とは?","<b>硬質地盤が比較的浅い位置</b>にあるとき、すべり面が<b>この層に規定され</b>、斜面の途中から出る。","ノート"],
+["破壊形態","底部破壊の「斜面先より前方を通る」とは?","円弧の出口が、斜面の下端(斜面先)より<b>さらに先の平らな地面</b>に出ること。斜面の前の土地も一緒に動き、盛り上がる。","ノート"],
+["安全率","Fs = MR/MA の意味は?","MR:すべりに<b>抵抗する</b>力のモーメント<br>MA:すべりを<b>起こそうとする</b>力のモーメント<br>Fs ≧ 1 安全、Fs ≦ 1 危険","ノート"],
+["安全率","Fs = SR/SA の意味は?","SR:すべりに<b>抵抗する</b>せん断力<br>SA:すべりを<b>起こそうとする</b>せん断力<br>(安全率 = 抵抗側 / 起動側)","ノート"],
+["安全率","斜面の安定条件と安定解析とは?","安定条件:斜面内のいたる所で <b>Fs > 1.0</b><br>安定解析:斜面内で<b>安全率が最小となるすべり面を探索</b>すること","ノート"],
+["安全率","クーロンの破壊規準と有効応力の式は?","<b>τ = c + σ tanφ</b>(c:粘着力、φ:内部摩擦角)<br><b>σ = σ' + u</b>(全応力 = 有効応力 + 間隙水圧)<br>水は抵抗しない、土は抵抗する","ノート"],
+["安全率","無限斜面:W と滑動力 SA は?","W = γt z(= 平行四辺形の面積 z×1 × 単位体積重量)<br><b>SA = W sinα = γt z sinα</b>","ノート"],
+["安全率","無限斜面:抵抗力 SR は?","<b>SR = c l + R tanφ = c l + γt z cosα tanφ</b><br>l cosα = 1 より l = 1/cosα なので<br>SR = c/cosα + γt z cosα tanφ","ノート"],
+["安全率","SR の「c l」の l は何?","<b>すべり面の長さ</b>。c はすべり面の単位面積あたりの粘着力なので、<b>すべり面の面積(l × 奥行1)</b>をかける。<span class='warn'>ノートの「c ×(オレンジ部分の面積)」は、すべる土の面積ではなく、すべり面の面積</span>","ノート"],
+["安全率","無限斜面(地下水なし)の安全率は?","<b>Fs = [ c/cos²α + γt z tanφ ] / [ γt z tanα ]</b><br>(SR/SA の分子分母を cosα で割る)","ノート"],
+["安全率","地下水がある無限斜面の安全率と、その要点は?","W = γt(z−H) + γsat H<br>Fs = [ c'/cos²α + {γt(z−H) + (γsat−γw)H} tanφ' ] / [ {γt(z−H) + γsat H} tanα ]<br>滑動力は水を含む <b>γsat</b>、抵抗力は浮力を引いた <b>γ' = γsat − γw</b>","授業"],
+["安全率","c = 0 の砂の安定条件は?","Fs = tanφ/tanα > 1 ⇔ <b>α < φ</b>。<br>傾斜角 = 内部摩擦角で限界。<b>安息角</b>(自然にとりうる土の最大傾斜角)は、粘着力のない砂では内部摩擦角に一致。深さ z に無関係。","授業"],
+["安全率","φ = 0 の粘土の安定条件は?","Fs = 2c/(γt z sin2α) > 1 ⇔ <b>z < 2c/(γt sin2α)</b><br>c 一定なので、滑りの<b>限界となる深さが必ず存在</b>する。","授業"],
+["安全率","演習④⑤:c'=0、φ'=30°、α=28°、z=3m の Fs は?","④ 地下水なし:tan30°/tan28° = <b>1.09</b>(安定)<br>⑤ 地表まで水位上昇:(1.8−1.0)/1.8 × 1.086 = <b>0.48</b>(崩壊)<br>水位上昇で安全率が半分以下になる","授業"],
+["安全率","Fellenius 法の安全率の式は?","<b>Fs = ΣMR/ΣMA = Σ(c li + Wi cosαi tanφ) / Σ Wi sinαi</b><br>スライス側面の力 Ei は影響が小さいので無視。円弧の中心 O 回りのモーメントで、r は約分される。","授業"],
+["安全率","Fellenius 法:Σcl はどう出す?","c は全弧長に効くので <b>Σcl = c × r θ</b>(θ はラジアン)<br>例題① 14 × 118° × π/180 = 28.83 m → 25 × 28.83 = <b>720.82 kN</b>","授業"],
+["安全率","Fellenius 演習①②の答えは?","① ρt=1.6、c=25、φ=5°、7スライス:(720.82 + 154.32)/688.62 = <b>1.27</b><br>② ρt=1.7、c=16、φ=2°、10スライス:(397.9 + 41.3)/366.7 = <b>1.20</b>","授業"],
+["安全率","W sinα が負になるスライスは?","円の中心より<b>斜面先側</b>(α < 0)のスライス。重さの成分が逆向きに働き、<b>すべりを止める側</b>になる。","授業"],
+["浸透流","ダルシーの法則と流量は?","<b>v = k i</b>(i = Δh/Δl 動水勾配)<br><b>Q = A v = A k i</b>","授業"],
+["浸透流","地下水の全水頭は?なぜ速度水頭を無視?","<b>h = hz + hp</b>(位置水頭 + 圧力水頭)<br>地下水は間隙をきわめてゆっくり流れ、<b>速度のエネルギーが非常に小さい</b>から。","参考"],
+["浸透流","フローネットの流量の式は?","<b>Q = k ΔH · Nf/Nd</b>(Nf:流路の数、Nd:等ポテンシャル線で区切った数)<br>例:k=5.28×10⁻⁴ cm/s、ΔH=300 cm、4/12 → <b>0.456 m²/day</b>","授業"],
+["浸透流","Dupuit の仮定とは?","流線 = 浸潤面と不透水層上面。全水頭の勾配が緩やかなら <b>h ≈ z、Δs ≈ Δx</b>。<br>v = kΔh/Δs ≈ kΔz/Δx で、<b>高さによらず流速が同じ</b>(準一様流)→ 計算が楽になる。","授業"],
+["浸透流","締切堤の流量の式は?","Q = vz = −kz dz/dx → 積分 Qx = −kz²/2 + C<br>x=0,z=H₁ → C = kH₁²/2、x=B,z=H₂ を代入<br><b>Q = k(H₁² − H₂²)/(2B)</b>","授業"],
+["浸透流","重力井戸と掘り抜き井戸の流量は?","重力井戸:<b>Q = πk(h₂² − h₁²)/ln(r₂/r₁)</b><br>掘り抜き井戸:<b>Q = 2πkD(h₂ − h₁)/ln(r₂/r₁)</b><br>積分するとき定数 C を忘れない","ノート"],
+["堤防","堤防の破壊形態4つは?","<b>越流</b>:越えた水が裏法尻を洗掘→決壊<br><b>洗掘</b>:強い流れで土が流失<br><b>浸透破壊</b>:堤体内の水位が上がり弱くなる<br><b>パイピング</b>:浸透水が通り道をつくり土粒子を運ぶ","ノート"],
+["堤防","洗掘が起こりやすい場所4つは?","① 川の屈曲部(外カーブ)② 合流点付近(支川の堤防は弱い)③ 川幅が狭くなる所(狭窄部)④ 橋や堰の上流 → 遊水地などで対策","ノート"],
+["堤防","浸透破壊に強い堤防と、浸透対策4工法は?","強い:高さ高い・敷幅広い・法面勾配緩い・平均動水勾配小さい<br>対策:<b>断面拡大工法・ドレーン工法・表法被覆工法・全面被覆工法</b>","ノート"],
+["堤防","ヒービングとは?","軟弱な粘性土地盤を掘削するとき、土留め壁外側の土の重さで、<b>掘削底面の土がすべり破壊を起こし、内側に回り込んで盛り上がる</b>現象。","ノート"]
+];
+var src={"ノート":"あなたのノート","授業":"授業スライド","参考":"他の人のまとめ"};
+var CATS=["すべて"].concat(C.map(function(c){return c[0];}).filter(function(v,i,a){return a.indexOf(v)===i;}));
+var store={get:function(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+var known=store.get("jiban-known",{}); // key: question text
+var cat=store.get("jiban-cat","すべて"); if(CATS.indexOf(cat)<0)cat="すべて";
+var onlyLeft=false, order=[], pos=0, flipped=false;
+var $=function(id){return document.getElementById(id);};
+var cats=$("cats");
+CATS.forEach(function(c){var b=document.createElement("button");b.type="button";b.className="chip";b.textContent=c;b.setAttribute("aria-pressed",String(c===cat));
+  b.addEventListener("click",function(){cat=c;store.set("jiban-cat",c);cats.querySelectorAll(".chip").forEach(function(x){x.setAttribute("aria-pressed",String(x.textContent===c));});build(false);});cats.appendChild(b);});
+function pool(){return C.map(function(c,i){return i;}).filter(function(i){return (cat==="すべて"||C[i][0]===cat)&&(!onlyLeft||!known[C[i][1]]);});}
+function build(shuffle){order=pool();if(shuffle){for(var i=order.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=order[i];order[i]=order[j];order[j]=t;}}pos=0;flipped=false;render();}
+function render(){
+  var inCat=C.filter(function(c){return cat==="すべて"||c[0]===cat;});
+  var k=inCat.filter(function(c){return known[c[1]];}).length;
+  $("stat").innerHTML="覚えた <b>"+k+"</b> / "+inCat.length+(order.length?" ・ "+(pos+1)+" 枚目 / "+order.length:"");
+  $("prog").style.width=(inCat.length?100*k/inCat.length:0)+"%";
+  var card=$("card");card.classList.toggle("flipped",flipped);
+  if(!order.length){$("cCat").textContent=cat;$("cSrc").textContent="";$("face").innerHTML="<p class='empty'>この範囲は全部「覚えた」になっています。<br>「まだのカードだけ」を外すと、全部のカードを見直せます。</p>";$("hint").textContent="";return;}
+  var c=C[order[pos]];
+  $("cCat").textContent=c[0]+(known[c[1]]?" ・ 覚えた":"");$("cSrc").textContent=src[c[3]];
+  $("face").innerHTML=flipped?"<p class='a'>"+c[2]+"</p>":"<p class='q'>"+c[1]+"</p>";
+  $("hint").textContent=flipped?"答え":"タップで答え";
+  card.setAttribute("aria-label",flipped?"答え":"問題。押すと答えを表示");
+}
+function flip(){if(!order.length)return;flipped=!flipped;var card=$("card");card.classList.remove("anim");void card.offsetWidth;card.classList.add("anim");render();}
+function go(d){if(!order.length)return;pos=(pos+d+order.length)%order.length;flipped=false;render();}
+function mark(v){if(!order.length)return;var q=C[order[pos]][1];if(v)known[q]=1;else delete known[q];store.set("jiban-known",known);
+  if(onlyLeft&&v){order.splice(pos,1);if(pos>=order.length)pos=0;flipped=false;render();}else go(1);}
+$("card").addEventListener("click",flip);
+$("card").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();flip();}});
+$("prev").addEventListener("click",function(){go(-1);});$("next").addEventListener("click",function(){go(1);});
+$("again").addEventListener("click",function(){mark(false);});$("know").addEventListener("click",function(){mark(true);});
+$("shuffle").addEventListener("click",function(){build(true);});
+$("onlyLeft").addEventListener("click",function(){onlyLeft=!onlyLeft;this.setAttribute("aria-pressed",String(onlyLeft));build(false);});
+var armed=false;$("reset").addEventListener("click",function(){if(!armed){armed=true;$("reset2").hidden=false;this.textContent="本当にリセット";return;}
+  known={};store.set("jiban-known",known);armed=false;$("reset2").hidden=true;this.textContent="記録をリセット";build(false);});
+document.addEventListener("keydown",function(e){if(e.target.tagName==="BUTTON"&&(e.key===" "||e.key==="Enter"))return;
+  if(e.key===" "){e.preventDefault();flip();}else if(e.key==="ArrowRight")go(1);else if(e.key==="ArrowLeft")go(-1);else if(e.key==="1")mark(false);else if(e.key==="2")mark(true);});
+build(false);
+})();
+</script>
