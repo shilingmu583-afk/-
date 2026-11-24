@@ -1,0 +1,64 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>浸透流 計算練習</title>
+<style>
+@page{size:A4;margin:14mm}
+body{font-family:"IPAGothic","IPAPGothic",sans-serif;font-size:10.3pt;line-height:1.6;color:#111}
+h1{font-size:15pt;border-bottom:2px solid #0b5394;margin:0 0 6px}
+h2{font-size:11.5pt;background:#0b5394;color:#fff;padding:2px 8px;margin:12px 0 6px}
+.pb{break-before:page}.q,.a{margin:6px 0;break-inside:avoid}
+.box{border:1px solid #999;height:46px;margin-top:3px}.box.l{height:120px}
+.meta{color:#555;font-size:9.5pt}.r{color:#c00;font-weight:bold}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2px 6px;vertical-align:top}th{background:#dde8f5}
+</style></head><body>
+<h1>浸透流 計算練習(授業内レポート型)</h1>
+<div class="meta">範囲:重力井戸・掘り抜き井戸・締切堤・堤体のフローネットと近似解 / 時間40分 / 導出は「式を立てる → 変数分離 → 積分(+C)→ 境界条件2つ → 引き算」の順で</div>
+
+<h2>A. 導出(白紙から書く)</h2>
+<div class="q"><b>問1</b> 重力井戸(不圧帯水層)で、Dupuit の仮定から Q = 2πrkh dh/dr を立てた理由を説明し、そこから k = Q/{π(h₂²−h₁²)}·ln(r₂/r₁) と Q を導け。</div><div class="box l"></div>
+<div class="q"><b>問2</b> 掘り抜き井戸(被圧帯水層、厚さ D)で、Q = 2πrkD dh/dr を立て、k と Q を導け。重力井戸の式との違い(h が D になる理由)も述べよ。</div><div class="box l"></div>
+<div class="q"><b>問3</b> 締切堤(幅 B、上流水位 H₁、下流水位 H₂)の単位幅流量 Q = k(H₁²−H₂²)/(2B) を、Q = −kz dz/dx から導け。なぜマイナスがつくのかも述べよ。</div><div class="box l"></div>
+<div class="q"><b>問4</b> 堤体内の流量の近似解を導け。Q = kz dz/dx …(1)、浸出側の法面も浸潤面:dz/dx = tanβ、z = λsinβ から始め、λ = l/cosβ − √(l²/cos²β − H²/sin²β) と Q = kλ sinβ tanβ を示せ。± のうち − を選ぶ理由も書くこと。</div><div class="box l"></div>
+
+<h2 class="pb">B. 数値計算(単位に注意)</h2>
+<div class="q"><b>問5</b>(フローネット・授業スライド)図の堤体で H = 30.0 m、k = 2.00×10⁻⁵ m/s、流路数 Nf = 3、等ポテンシャル線の間隔数 Nd = 10 とする。単位奥行き当たり、1日当たりの漏水量を求めよ。</div><div class="box"></div>
+<div class="q"><b>問6</b>(フローネット)H = 20 m、k = 1.0×10⁻⁵ m/s、Nf = 4、Nd = 12 のとき、単位奥行き・1日当たりの漏水量を求めよ。</div><div class="box"></div>
+<div class="q"><b>問7</b>(近似解・復習問題)ダム高 H = 32 m、l = 104.0 m、浸出側法面勾配 2:1、k = 30.0 m/day のとき、λ と Q を求めよ。</div><div class="box"></div>
+<div class="q"><b>問8</b>(近似解)H = 20 m、l = 60 m、浸出側法面勾配 2:1、k = 1.0×10⁻⁵ m/s のとき、λ と 1日当たりの Q を求めよ。</div><div class="box"></div>
+<div class="q"><b>問9</b>(重力井戸の揚水試験)揚水量 Q = 0.010 m³/s。観測井 r₁ = 10 m で h₁ = 8.0 m、r₂ = 40 m で h₂ = 9.0 m。透水係数 k を求めよ。</div><div class="box"></div>
+<div class="q"><b>問10</b>(重力井戸)k = 2.0×10⁻⁴ m/s、r₁ = 10 m で h₁ = 8.0 m、r₂ = 50 m で h₂ = 9.0 m のとき、Q を m³/s と m³/day で求めよ。</div><div class="box"></div>
+<div class="q"><b>問11</b>(掘り抜き井戸の揚水試験)帯水層厚 D = 6.0 m、Q = 0.0050 m³/s、r₁ = 10 m で h₁ = 20.0 m、r₂ = 60 m で h₂ = 21.5 m。k を求めよ。</div><div class="box"></div>
+<div class="q"><b>問12</b>(締切堤)k = 10 m/day、H₁ = 6.0 m、H₂ = 2.0 m、B = 40 m のとき、単位幅流量 Q を求めよ。</div><div class="box"></div>
+
+<h1 class="pb">解答</h1>
+<h2>A. 導出</h2>
+<div class="a"><b>問1</b> Dupuit の仮定:全水頭の勾配が緩やかなので、等ポテンシャル線を鉛直とみなし、高さによらず流速が同じ(v = k dh/dr)。井戸から距離 r の円筒面(半径 r、高さ h)を通る流量は、面積 2πrh × 流速 → <b>Q = 2πrkh dh/dr</b>。<br>
+変数分離:Q dr/r = 2πkh dh。Q は r によらず一定なので積分して <b>Q ln r = πkh² + C</b>。<br>
+境界値:r = r₁ で h = h₁ → Q ln r₁ = πkh₁² + C …(1)、r = r₂ で h = h₂ → Q ln r₂ = πkh₂² + C …(2)。<br>
+(2)−(1):Q(ln r₂ − ln r₁) = πk(h₂² − h₁²) → <span class="r">k = Q/{π(h₂²−h₁²)}·ln(r₂/r₁)</span>、<span class="r">Q = πk(h₂²−h₁²)/ln(r₂/r₁)</span>。</div>
+<div class="a"><b>問2</b> 被圧帯水層では、上が不透水層なので、水が通る高さは常に帯水層厚 D。円筒面積 2πrD × v(= k dh/dr)→ <b>Q = 2πrkD dh/dr</b>。Q dr/r = 2πkD dh → <b>Q ln r = 2πkDh + C</b>。境界値を代入し (2)−(1):Q(ln r₂ − ln r₁) = 2πkD(h₂ − h₁) → <span class="r">k = Q/{2πD(h₂−h₁)}·ln(r₂/r₁)</span>、<span class="r">Q = 2πkD(h₂−h₁)/ln(r₂/r₁)</span>。<br>違い:重力井戸は断面の高さ h 自体が変わるので h dh を積分して h²/2 になり、h² の差が出る。掘り抜き井戸は D が一定なので h の差になる。</div>
+<div class="a"><b>問3</b> 断面積 z×1、v = k×(動水勾配)。x の正の向きに進むと水位 z が下がる(dz/dx &lt; 0)ので、流量を正にするためマイナスをつける:<b>Q = vz = −kz dz/dx</b>。定常で Q 一定、積分:Qx = −kz²/2 + C。x = 0 で z = H₁ → C = kH₁²/2。x = B で z = H₂ → QB = −kH₂²/2 + kH₁²/2 → <span class="r">Q = k(H₁²−H₂²)/(2B)</span>。<br>(井戸と問4は、r や x を水が流れてくる側に向けて取っているので勾配が正になり、マイナスはつかない。)</div>
+<div class="a"><b>問4</b> 浸出点の高さ z = λ sinβ、勾配 dz/dx = tanβ を (1) に代入:<b>Q = kλ sinβ tanβ …(2)</b>。(1)を積分:<b>Qx = kz²/2 + C …(3)</b>。<br>
+境界1:x = l で z = H → Ql = kH²/2 + C …(4)。境界2(浸出点):x = λcosβ、z = λsinβ → Qλcosβ = kλ²sin²β/2 + C …(5)。<br>
+(5)に(2):kλ² sinβ cosβ tanβ = kλ² sin²β なので C = kλ²sin²β − kλ²sin²β/2 = <b>kλ²sin²β/2 …(6)</b>。<br>
+(4)に(2)(6):(kλ sinβ tanβ) l = kH²/2 + kλ²sin²β/2。k で割り、2/sin²β をかける(sinβ tanβ = sin²β/cosβ)と<br>
+<b>λ² − (2l/cosβ)λ + H²/sin²β = 0</b> → λ = l/cosβ ± √(l²/cos²β − H²/sin²β)。<br>
+浸出点は堤体内にあり λ &lt; l なので − を選ぶ(+ だと λ &gt; l/cosβ &gt; l になる):<span class="r">λ = l/cosβ − √(l²/cos²β − H²/sin²β)</span>、<span class="r">Q = kλ sinβ tanβ</span>。</div>
+
+<h2>B. 数値計算</h2>
+<div class="a"><b>問5</b> Q = k(H/Nd)Nf = 2.00×10⁻⁵ × 30.0/10 × 3 = 1.80×10⁻⁴ m³/s/m。×86400 s → <span class="r">15.5 m³/day/m</span>(スライドと一致)。</div>
+<div class="a"><b>問6</b> Q = 1.0×10⁻⁵ × 20/12 × 4 = 6.67×10⁻⁵ m³/s/m × 86400 = <span class="r">5.76 m³/day/m</span>。</div>
+<div class="a"><b>問7</b> 2:1 → tanβ = 1/2、sinβ = 1/√5、cosβ = 2/√5。λ = 104.0/(2/√5) − √(104.0²/(4/5) − 32²/(1/5)) = 116.28 − √(13520 − 5120) = 116.28 − 91.65 = <span class="r">24.62 m</span>。Q = 30.0 × 24.62 × (1/√5) × (1/2) = <span class="r">165 m³/day/m</span>。(フローネットでは 150。先生「どちらも正しい」)</div>
+<div class="a"><b>問8</b> λ = 60/(2/√5) − √(60²×5/4 − 20²×5) = 67.08 − √(4500 − 2000) = 67.08 − 50.00 = <span class="r">17.08 m</span>。Q = 1.0×10⁻⁵ × 17.08 × 0.4472 × 0.5 = 3.82×10⁻⁵ m³/s/m × 86400 = <span class="r">3.30 m³/day/m</span>。</div>
+<div class="a"><b>問9</b> k = Q/{π(h₂²−h₁²)}·ln(r₂/r₁) = 0.010/{π(81 − 64)} × ln4 = 0.010/53.41 × 1.386 = <span class="r">2.60×10⁻⁴ m/s</span>。</div>
+<div class="a"><b>問10</b> Q = π × 2.0×10⁻⁴ × (81 − 64)/ln5 = 0.01068/1.609 = <span class="r">6.64×10⁻³ m³/s</span> = <span class="r">573 m³/day</span>。</div>
+<div class="a"><b>問11</b> k = Q/{2πD(h₂−h₁)}·ln(r₂/r₁) = 0.0050/(2π × 6.0 × 1.5) × ln6 = 0.0050/56.55 × 1.792 = <span class="r">1.58×10⁻⁴ m/s</span>。</div>
+<div class="a"><b>問12</b> Q = 10 × (36 − 4)/(2 × 40) = <span class="r">4.0 m³/day/m</span>。</div>
+
+<h2>よくある間違い</h2>
+<table><tr><th>間違い</th><th>対策</th></tr>
+<tr><td>積分定数 C を忘れる</td><td>積分したら必ず「+ C」。境界値2つを引き算して消す</td></tr>
+<tr><td>log と ln の混同</td><td>井戸の式は<b>自然対数 ln</b>。電卓は「ln」キーを使う(log₁₀ だと約2.3倍ずれる)</td></tr>
+<tr><td>重力井戸で h²、掘り抜き井戸で h を取り違える</td><td>断面の高さが変わる(h)か一定(D)かで判断</td></tr>
+<tr><td>m³/s のまま答える</td><td>「1日当たり」なら ×86400(= 24 × 60 × 60)</td></tr>
+<tr><td>近似解で + の解を選ぶ</td><td>浸出点は λ &lt; l なので −</td></tr>
+<tr><td>Nf と Nd を逆にする</td><td>Nf = 流路(流線で区切った帯)の数、Nd = 水頭が下がる区切りの数。Nd が分母</td></tr></table>
+</body></html>
