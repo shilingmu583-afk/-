@@ -1,0 +1,74 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>斜面安定 計算練習</title>
+<style>
+@page{size:A4;margin:14mm}
+body{font-family:"IPAGothic","IPAPGothic",sans-serif;font-size:10.3pt;line-height:1.6;color:#111}
+h1{font-size:15pt;border-bottom:2px solid #0b5394;margin:0 0 6px}
+h2{font-size:11.5pt;background:#0b5394;color:#fff;padding:2px 8px;margin:12px 0 6px}
+.pb{break-before:page}.q,.a{margin:6px 0;break-inside:avoid}
+.box{border:1px solid #999;height:46px;margin-top:3px}.box.l{height:120px}
+.meta{color:#555;font-size:9.5pt}.r{color:#c00;font-weight:bold}
+table{border-collapse:collapse;width:100%;break-inside:avoid}td,th{border:1px solid #888;padding:2px 6px;vertical-align:top}th{background:#dde8f5}
+</style></head><body>
+<h1>斜面安定 これだけ(練習の前に読む)</h1>
+
+<h2>安全率の考え方(スライド)</h2>
+<table>
+<tr><td style="width:26%"><b>モーメントの釣合い</b></td><td>Fs = M<sub>R</sub>/M<sub>A</sub>(すべりに抵抗する力のモーメント / すべりを起こそうとする力のモーメント)</td></tr>
+<tr><td><b>せん断力の釣合い</b></td><td>Fs = S<sub>R</sub>/S<sub>A</sub>(すべりに抵抗するせん断力 / すべりを起こそうとするせん断力)</td></tr>
+<tr><td><b>安定条件</b></td><td>斜面内のいたる所で <b>Fs &gt; 1.0</b></td></tr>
+<tr><td><b>安定解析</b></td><td>斜面内で<b>安全率が最小となるすべり面を探索</b>すること</td></tr>
+</table>
+
+<h2>無限斜面(単位幅の土塊、l cosα = 1、側面の力 P は釣り合うので無視)</h2>
+<table>
+<tr><th style="width:26%"></th><th>地下水なし</th><th>地下水あり(すべり面から高さ H)</th></tr>
+<tr><td>重さ W</td><td>γ<sub>t</sub>z</td><td>γ<sub>t</sub>(z−H) + γ<sub>sat</sub>H</td></tr>
+<tr><td>滑動力 S<sub>A</sub> = W sinα</td><td>γ<sub>t</sub>z sinα</td><td>{γ<sub>t</sub>(z−H) + γ<sub>sat</sub>H} sinα</td></tr>
+<tr><td>抵抗力 S<sub>R</sub> = cl + R tanφ</td><td>c/cosα + γ<sub>t</sub>z cosα tanφ</td><td>c'/cosα + {γ<sub>t</sub>(z−H) + (γ<sub>sat</sub>−γ<sub>w</sub>)H} cosα tanφ'</td></tr>
+<tr><td>Fs(分子分母を cosα で割る)</td><td><b>[c/cos²α + γ<sub>t</sub>z tanφ] / [γ<sub>t</sub>z tanα]</b></td><td><b>[c'/cos²α + {γ<sub>t</sub>(z−H) + (γ<sub>sat</sub>−γ<sub>w</sub>)H} tanφ'] / [{γ<sub>t</sub>(z−H) + γ<sub>sat</sub>H} tanα]</b></td></tr>
+</table>
+<div class="a">・l = 1/cosα(すべり面の長さ)。c はすべり面の面積 l×1 にかかる<br>
+・滑動力は水を含む重さ(γ<sub>sat</sub>)、抵抗力は浮力を引いた有効応力(γ<sub>sat</sub>−γ<sub>w</sub>)<br>
+・<b>砂 c = 0</b>:Fs = tanφ/tanα → <b>α &lt; φ で安定</b>(z は約分。安息角 = 内部摩擦角)<br>
+・<b>粘土 φ = 0</b>:Fs = 2c/(γ<sub>t</sub>z sin2α) → <b>z &lt; 2c/(γ<sub>t</sub> sin2α)</b>(限界深さがある)</div>
+
+<h2>円弧すべり:Fellenius 法(スウェーデン法)</h2>
+<div class="a">斜面をスライスに分割し、比較的影響の少ないスライス側面の力 E<sub>i</sub> を無視。円弧の中心 O 回りのモーメントの釣合い。<br>
+滑動モーメント M<sub>Ai</sub> = W<sub>i</sub> r sinα<sub>i</sub>　抵抗力 P<sub>i</sub> = W<sub>i</sub> cosα<sub>i</sub>、S<sub>Ri</sub> = cl<sub>i</sub> + P<sub>i</sub> tanφ　抵抗モーメント M<sub>Ri</sub> = S<sub>Ri</sub> r<br>
+<b>Fs = ΣM<sub>R</sub>/ΣM<sub>A</sub> = Σ(cl<sub>i</sub> + W<sub>i</sub> cosα<sub>i</sub> tanφ) / ΣW<sub>i</sub> sinα<sub>i</sub></b>(r は約分)</div>
+<div class="a"><b>表の作り方</b>:A<sub>i</sub>, α<sub>i</sub> → sinα, cosα → <span class="r">W = ρ × 9.81 × A</span> → W sinα、W cosα、W cosα tanφ → 合計。Σcl = c × 弧長(弧長 = r × 中心角[rad])</div>
+
+<h2>落とし穴</h2>
+<div class="a">・<b>c ≠ 0 なら必ず γ = ρg</b>(ρ のままだと Fs が10倍近くずれる)。c = 0 の比だけの式なら g は約分されて ρ のままでよい<br>
+・角度は電卓を DEG にする・α が負のスライスは W sinα も負(止める側)・安全率が 10 を超えたら g を疑う<br>
+・最後は「Fs &gt; 1.0 で安定 / &lt; 1.0 で不安定」と判定まで書く</div>
+
+<h1 class="pb">斜面安定 計算練習(授業内レポート型)</h1>
+<div class="meta">時間40分 / γ<sub>w</sub> = 9.81 kN/m³ / 判定まで書く</div>
+<h2>A. 導出</h2>
+<div class="q"><b>問1</b> 単位幅の土塊(深さ z、傾斜角 α、地下水なし)について、W、S<sub>A</sub>、S<sub>R</sub> を図とともに示し、Fs = [c/cos²α + γ<sub>t</sub>z tanφ]/[γ<sub>t</sub>z tanα] を導け。</div><div class="box l"></div>
+<div class="q"><b>問2</b> すべり面から高さ H まで地下水があるときの Fs を導け。滑動力に γ<sub>sat</sub>、抵抗力に γ<sub>sat</sub>−γ<sub>w</sub> を使う理由も述べよ。</div><div class="box l"></div>
+<div class="q"><b>問3</b> (1)c = 0 の砂の斜面が安定である条件を求めよ。(2)φ = 0 の粘土の斜面が安定である深さ z の条件を求めよ。</div><div class="box"></div>
+<div class="q"><b>問4</b> Fellenius 法の安全率の式を、スライスに働く力(W<sub>i</sub>、P<sub>i</sub>、S<sub>Ri</sub>)と中心 O 回りのモーメントから導け。</div><div class="box l"></div>
+
+<h2>B. 数値計算</h2>
+<div class="q"><b>問5</b>(演習④⑤)地下水のない表層 3 m の半無限一様な c' = 0、φ' = 30° の砂質地盤で、傾斜角 28° の斜面の Fs を求めよ。また、豪雨で地表まで水位が上昇したときの Fs を求めよ(ρ<sub>sat</sub> = ρ<sub>t</sub> = 1.8 t/m³)。</div><div class="box"></div>
+<div class="q"><b>問6</b>(問5の数値替え)c' = 0、φ' = 35°、α = 30°、z = 4 m、ρ<sub>sat</sub> = ρ<sub>t</sub> = 1.9 t/m³。地下水なしと、地表まで水位が上昇したときの Fs を求めよ。</div><div class="box"></div>
+<div class="q"><b>問7</b>(φ = 0)c = 20 kPa、γ<sub>t</sub> = 17 kN/m³、α = 20° の粘土斜面が安定である深さの条件を求めよ。</div><div class="box"></div>
+<div class="q"><b>問8</b>(c ≠ 0、地下水あり)c' = 5 kPa、φ' = 30°、α = 25°、z = 3 m、H = 1.5 m、ρ<sub>t</sub> = 1.7 t/m³、ρ<sub>sat</sub> = 1.9 t/m³ のとき Fs を求めよ。</div><div class="box"></div>
+<div class="q"><b>問9</b>(Fellenius・授業の例題)ρ<sub>t</sub> = 1.6 t/m³、c = 25 kN/m²、φ = 5°、r = 14 m、中心角 118°。A(m²)= 19.32, 39.83, 26.97, 19.73, 12.08, 7.65, 2.82、α(°)= 48.35, 34.58, 19.78, 6.78, −4.46, −16.90, −31.24。表を完成させて Fs を求めよ。</div><div class="box l"></div>
+
+<h1 class="pb">解答</h1>
+<div class="a"><b>問1</b> W = γ<sub>t</sub>z(幅1×深さz)。S<sub>A</sub> = W sinα = γ<sub>t</sub>z sinα。R = W cosα、l = 1/cosα(l cosα = 1)。S<sub>R</sub> = cl + R tanφ = c/cosα + γ<sub>t</sub>z cosα tanφ。Fs = S<sub>R</sub>/S<sub>A</sub> の分子分母を cosα で割り、<span class="r">Fs = [c/cos²α + γ<sub>t</sub>z tanφ]/[γ<sub>t</sub>z tanα]</span>。</div>
+<div class="a"><b>問2</b> W = γ<sub>t</sub>(z−H) + γ<sub>sat</sub>H、S<sub>A</sub> = W sinα。有効垂直力 U' = W cosα − γ<sub>w</sub>H cosα = {γ<sub>t</sub>(z−H) + (γ<sub>sat</sub>−γ<sub>w</sub>)H} cosα、S<sub>R</sub> = c'l + U' tanφ'。cosα で割って Fs の式。理由:すべらせるのは水を含む土塊全体の重さ。摩擦に効くのは間隙水圧(浮力)を引いた有効応力だから。</div>
+<div class="a"><b>問3</b> (1)Fs = tanφ/tanα &gt; 1 ⇔ <span class="r">α &lt; φ</span>。(2)Fs = c/(γ<sub>t</sub>z sinα cosα) = 2c/(γ<sub>t</sub>z sin2α) &gt; 1 ⇔ <span class="r">z &lt; 2c/(γ<sub>t</sub> sin2α)</span>。</div>
+<div class="a"><b>問4</b> 側面力 E<sub>i</sub> を無視。滑動モーメント M<sub>Ai</sub> = W<sub>i</sub> r sinα<sub>i</sub>。底面の垂直力 P<sub>i</sub> = W<sub>i</sub> cosα<sub>i</sub>、抵抗力 S<sub>Ri</sub> = cl<sub>i</sub> + P<sub>i</sub> tanφ、抵抗モーメント M<sub>Ri</sub> = S<sub>Ri</sub> r。Fs = ΣM<sub>R</sub>/ΣM<sub>A</sub> で r が約分され <span class="r">Fs = Σ(cl<sub>i</sub> + W<sub>i</sub> cosα<sub>i</sub> tanφ)/ΣW<sub>i</sub> sinα<sub>i</sub></span>。</div>
+<div class="a"><b>問5</b> 地下水なし:Fs = tan30°/tan28° = 0.5774/0.5317 = <span class="r">1.09 &gt; 1.0 安定</span>。水位上昇(H = z):Fs = (1.8−1.0)/1.8 × 1.086 = <span class="r">0.48 &lt; 1.0 不安定</span>(g は約分されるので ρ のままでよい)。</div>
+<div class="a"><b>問6</b> 地下水なし:tan35°/tan30° = <span class="r">1.21 安定</span>。水位上昇:(1.9−1.0)/1.9 × 1.213 = <span class="r">0.57 不安定</span>(z = 4 m は約分される)。</div>
+<div class="a"><b>問7</b> z &lt; 2c/(γ<sub>t</sub> sin2α) = 40/(17 × sin40°) = 40/10.93 = <span class="r">3.66 m</span>。</div>
+<div class="a"><b>問8</b> c ≠ 0 なので γ = ρg:γ<sub>t</sub> = 16.68、γ<sub>sat</sub> = 18.64 kN/m³。分子 = 5/cos²25° + (16.68×1.5 + 8.83×1.5) tan30° = 6.09 + 22.09 = 28.18。分母 = (16.68×1.5 + 18.64×1.5) tan25° = 52.98 × 0.4663 = 24.70。Fs = <span class="r">1.14 &gt; 1.0 安定</span>。</div>
+<div class="a"><b>問9</b> γ<sub>t</sub> = 1.6 × 9.81 = 15.696。
+<table><tr><th>i</th><th>W</th><th>W sinα</th><th>W cosα tanφ</th></tr>
+<tr><td>1</td><td>303.25</td><td>226.59</td><td>17.63</td></tr><tr><td>2</td><td>625.17</td><td>354.82</td><td>45.03</td></tr><tr><td>3</td><td>423.32</td><td>143.26</td><td>34.85</td></tr><tr><td>4</td><td>309.68</td><td>36.56</td><td>26.90</td></tr><tr><td>5</td><td>189.61</td><td>−14.74</td><td>16.54</td></tr><tr><td>6</td><td>120.07</td><td>−34.91</td><td>10.05</td></tr><tr><td>7</td><td>44.26</td><td>−22.96</td><td>3.31</td></tr><tr><td>計</td><td></td><td>688.62</td><td>154.32</td></tr></table>
+弧長 = 14 × 118 × π/180 = 28.83 m、Σcl = 25 × 28.83 = 720.82。Fs = (720.82 + 154.32)/688.62 = <span class="r">1.27 &gt; 1.0 安定</span>。</div>
+</body></html>
