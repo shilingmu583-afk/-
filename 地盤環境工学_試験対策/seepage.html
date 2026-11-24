@@ -18,8 +18,11 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2p
 <tr><td><b>連続条件式</b></td><td>微小要素 dxdy で流入 = 流出(水は非圧縮)→ <b>∂v<sub>x</sub>/∂x + ∂v<sub>y</sub>/∂y = 0</b></td></tr>
 <tr><td><b>支配方程式</b></td><td>v<sub>x</sub> = −k ∂h/∂x、v<sub>y</sub> = −k ∂h/∂y を連続式に代入、k 一定 → <b>∂²h/∂x² + ∂²h/∂y² = ∇²h = 0</b>(Laplace の式)</td></tr>
 <tr><td><b>ポテンシャル関数</b></td><td>Φ = −kh とおくと v<sub>x</sub> = ∂Φ/∂x、v<sub>y</sub> = ∂Φ/∂y(Φ の勾配が流速)。Φ も Laplace 式を満たす</td></tr>
-<tr><td><b>等ポテンシャル線と流線</b></td><td>等ポテンシャル線(Φ = 一定)と流線(Ψ = 一定)は<b>直交</b>する</td></tr>
+<tr><td><b>等ポテンシャル線と流線</b></td><td>等ポテンシャル線(Φ = 一定)と流線(Ψ = 一定)は<b>直交</b>する。流速の向きは Φ = 一定の曲面に直交</td></tr>
 <tr><td><b>フローネット</b></td><td>互いに直交する等ポテンシャル線と流線群で流れの場を区切ったもの。正方形セル(d×d)なら q = k(Δh/d)d = <b>kΔh</b> → <b>全てのセルで流量と水頭損失が等しい</b></td></tr>
+<tr><td><b>描き方4つ</b></td><td>① 自由水に接する土の表面 = 等ポテンシャル線(上流側 Φ = H₁、下流側 Φ = H₂)② 不透水境界(不透水層・矢板)= 流線 ③ 両者は直交 ④ メッシュはなるべく正方形</td></tr>
+<tr><td><b>流量</b></td><td>Δh = (H₁−H₂)/N<sub>d</sub>、1本の流路 q' = kΔh、<b>Q = N<sub>f</sub> q' = k(H₁−H₂)N<sub>f</sub>/N<sub>d</sub></b></td></tr>
+<tr><td><b>間隙水圧</b></td><td>上流から N 個のセルを通った点の全水頭 <b>h = H − NΔh</b>、圧力水頭 <b>h<sub>p</sub> = h − h<sub>e</sub></b>(h<sub>e</sub>:その点の位置水頭)、<b>u = h<sub>p</sub>γ<sub>w</sub></b></td></tr>
 </table>
 <h2>計算の共通ルール</h2>
 <div class="a">流量 Q = 面積 × v。Dupuit の仮定:勾配が緩やかなので、高さによらず流速が同じとみなす。</div>
@@ -39,7 +42,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2p
 <div class="a">x = l で z = H → Ql = kH²/2 + C …(4)<br>浸出点 x = λcosβ、z = λsinβ → C = kλ²sin²β/2 …(6)<br>(4)に入れて整理 → λ² − (2l/cosβ)λ + H²/sin²β = 0 → <b>λ &lt; l なので − の解</b></div>
 
 <h2>フローネット</h2>
-<div class="a"><b>Q = k × (H/Nd) × Nf</b>  Nf = 流路の数、Nd = 水頭が下がる区切りの数(分母)<br>例:k = 2.00×10⁻⁵ m/s、H = 30 m、Nf = 3、Nd = 10 → 1.8×10⁻⁴ m³/s × 86400 = 15.5 m³/day/m</div>
+<div class="a"><b>Q = k × (H/Nd) × Nf</b>  Nf = 流路の数、Nd = 水頭が下がる区切りの数(分母)<br>例1(堤体):k = 2.00×10⁻⁵ m/s、H = 30 m、Nf = 3、Nd = 10 → 1.8×10⁻⁴ m³/s × 86400 = 15.5 m³/day/m<br>例2(止水壁・板書):k = 5.28×10⁻⁴ cm/s、ΔH = 300 cm、Nf = 4、Nd = 8 → 0.0792 cm³/s(奥行き1cmあたり)× 86400 = 6843 cm³/day。<b>単位は cm か m のどちらかにそろえる</b></div>
 
 <h2>落とし穴</h2>
 <div class="a">・積分の <b>+C</b> を忘れない ・<b>ln</b>(自然対数)を使う ・重力井戸は <b>h²</b>、掘り抜きは <b>h</b> ・「1日当たり」は <b>×86400</b> ・2:1 の法面は tanβ = 1/2、sinβ = 1/√5、cosβ = 2/√5</div>
@@ -62,6 +65,8 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2p
 <div class="q"><b>問10</b>(重力井戸)k = 2.0×10⁻⁴ m/s、r₁ = 10 m で h₁ = 8.0 m、r₂ = 50 m で h₂ = 9.0 m のとき、Q を m³/s と m³/day で求めよ。</div><div class="box"></div>
 <div class="q"><b>問11</b>(掘り抜き井戸の揚水試験)帯水層厚 D = 6.0 m、Q = 0.0050 m³/s、r₁ = 10 m で h₁ = 20.0 m、r₂ = 60 m で h₂ = 21.5 m。k を求めよ。</div><div class="box"></div>
 <div class="q"><b>問12</b>(締切堤)k = 10 m/day、H₁ = 6.0 m、H₂ = 2.0 m、B = 40 m のとき、単位幅流量 Q を求めよ。</div><div class="box"></div>
+<div class="q"><b>問13</b>(止水壁・授業の例題)等方的な透水性地盤(厚さ 4 m)の上に底幅 8 m のコンクリート止水壁があり、左側に水深 3 m の水がたまっている(右側の水位は地表面)。k = 5.28×10⁻⁴ cm/s。フローネットを描いたら Nf = 4、Nd = 8 だった。単位奥行きあたりの透水流量を cm³/s と cm³/day で求めよ。</div><div class="box"></div>
+<div class="q"><b>問14</b>(間隙水圧)矢板の上流側水位が地表面から H₁ = 4 m、下流側が H₂ = 1 m、Nd = 6 のフローネットがある。地表面を基準(位置水頭 0)とするとき、上流側で地表面から深さ 3 m、上流から 2 個のセルを通った点の全水頭 h、圧力水頭 h<sub>p</sub>、間隙水圧 u を求めよ(γ<sub>w</sub> = 9.81 kN/m³)。</div><div class="box"></div>
 
 <h1 class="pb">解答</h1>
 <h2>A. 導出</h2>
@@ -87,6 +92,8 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2p
 <div class="a"><b>問10</b> Q = π × 2.0×10⁻⁴ × (81 − 64)/ln5 = 0.01068/1.609 = <span class="r">6.64×10⁻³ m³/s</span> = <span class="r">573 m³/day</span>。</div>
 <div class="a"><b>問11</b> k = Q/{2πD(h₂−h₁)}·ln(r₂/r₁) = 0.0050/(2π × 6.0 × 1.5) × ln6 = 0.0050/56.55 × 1.792 = <span class="r">1.58×10⁻⁴ m/s</span>。</div>
 <div class="a"><b>問12</b> Q = 10 × (36 − 4)/(2 × 40) = <span class="r">4.0 m³/day/m</span>。</div>
+<div class="a"><b>問13</b> Q = k(H₁−H₂)Nf/Nd = 5.28×10⁻⁴ × (300 − 0) × 4/8 = <span class="r">0.0792 cm³/s</span>(奥行き 1 cm あたり)× 86400 = <span class="r">6843 cm³/day</span>(= 0.684 m³/day/m)。k が cm/s なので水頭も cm(3 m = 300 cm)にする。板書の1回目にあった「5.28×10⁻⁴ ×(3−0)× 4/8 = 7.92×10⁻⁴ m³/s」は cm/s と m が混ざっていて、m にそろえると 5.28×10⁻⁶ × 3 × 0.5 = 7.92×10⁻⁶ m³/s/m。</div>
+<div class="a"><b>問14</b> Δh = (4 − 1)/6 = 0.5 m。h = H − NΔh = 4 − 2 × 0.5 = <span class="r">3.0 m</span>。位置水頭 h<sub>e</sub> = −3 m なので h<sub>p</sub> = h − h<sub>e</sub> = 3 − (−3) = <span class="r">6.0 m</span>。u = 6.0 × 9.81 = <span class="r">58.9 kPa</span>(静水圧なら 7 m 分の 68.7 kPa。流れて水頭を 1 m 失った分だけ小さい)。</div>
 
 <h2>よくある間違い</h2>
 <table><tr><th>間違い</th><th>対策</th></tr>
