@@ -10,8 +10,19 @@ h2{font-size:11.5pt;background:#0b5394;color:#fff;padding:2px 8px;margin:12px 0 
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2px 6px;vertical-align:top}th{background:#dde8f5}
 </style></head><body>
 <h1>浸透流 これだけ(練習の前に読む)</h1>
-<h2>共通の考え方</h2>
-<div class="a">ダルシー則 <b>v = k × 動水勾配</b>、<b>流量 Q = 面積 × v</b>。Dupuit の仮定:勾配が緩やかなので、高さによらず流速が同じとみなす。</div>
+<h2>基礎(スライドの流れどおり)</h2>
+<table>
+<tr><td style="width:24%"><b>水頭の定義</b></td><td>Bernoulli:½ρ<sub>w</sub>v² + ρ<sub>w</sub>gz + p = E(運動・位置・圧力エネルギー)。ρ<sub>w</sub>g で割ると h<sub>v</sub> + h<sub>z</sub> + h<sub>p</sub> = h(速度水頭 v²/2g、位置水頭 z、圧力水頭 p/γ<sub>w</sub>)</td></tr>
+<tr><td><b>地下水の全水頭</b></td><td>流れがきわめて遅く速度水頭は無視できる → <b>h = h<sub>z</sub> + h<sub>p</sub></b></td></tr>
+<tr><td><b>動水勾配と Darcy</b></td><td><b>i = Δh/Δl</b>(2点の水頭差 ÷ 流れた距離)、<b>v = ki</b>(流速は動水勾配に比例、k:透水係数)、Q = Av</td></tr>
+<tr><td><b>連続条件式</b></td><td>微小要素 dxdy で流入 = 流出(水は非圧縮)→ <b>∂v<sub>x</sub>/∂x + ∂v<sub>y</sub>/∂y = 0</b></td></tr>
+<tr><td><b>支配方程式</b></td><td>v<sub>x</sub> = −k ∂h/∂x、v<sub>y</sub> = −k ∂h/∂y を連続式に代入、k 一定 → <b>∂²h/∂x² + ∂²h/∂y² = ∇²h = 0</b>(Laplace の式)</td></tr>
+<tr><td><b>ポテンシャル関数</b></td><td>Φ = −kh とおくと v<sub>x</sub> = ∂Φ/∂x、v<sub>y</sub> = ∂Φ/∂y(Φ の勾配が流速)。Φ も Laplace 式を満たす</td></tr>
+<tr><td><b>等ポテンシャル線と流線</b></td><td>等ポテンシャル線(Φ = 一定)と流線(Ψ = 一定)は<b>直交</b>する</td></tr>
+<tr><td><b>フローネット</b></td><td>互いに直交する等ポテンシャル線と流線群で流れの場を区切ったもの。正方形セル(d×d)なら q = k(Δh/d)d = <b>kΔh</b> → <b>全てのセルで流量と水頭損失が等しい</b></td></tr>
+</table>
+<h2>計算の共通ルール</h2>
+<div class="a">流量 Q = 面積 × v。Dupuit の仮定:勾配が緩やかなので、高さによらず流速が同じとみなす。</div>
 <div class="a"><b>導出の型(全部同じ)</b>:① Q = 面積 × k × 勾配 を立てる → ② 変数分離 → ③ 積分して <span class="r">+C</span> → ④ 境界値を2つ代入 → ⑤ 引き算して C を消す</div>
 
 <h2>4つの式</h2>
