@@ -9,7 +9,31 @@ h2{font-size:11.5pt;background:#0b5394;color:#fff;padding:2px 8px;margin:12px 0 
 .meta{color:#555;font-size:9.5pt}.r{color:#c00;font-weight:bold}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:2px 6px;vertical-align:top}th{background:#dde8f5}
 </style></head><body>
-<h1>浸透流 計算練習(授業内レポート型)</h1>
+<h1>浸透流 これだけ(練習の前に読む)</h1>
+<h2>共通の考え方</h2>
+<div class="a">ダルシー則 <b>v = k × 動水勾配</b>、<b>流量 Q = 面積 × v</b>。Dupuit の仮定:勾配が緩やかなので、高さによらず流速が同じとみなす。</div>
+<div class="a"><b>導出の型(全部同じ)</b>:① Q = 面積 × k × 勾配 を立てる → ② 変数分離 → ③ 積分して <span class="r">+C</span> → ④ 境界値を2つ代入 → ⑤ 引き算して C を消す</div>
+
+<h2>4つの式</h2>
+<table>
+<tr><th>対象</th><th>① 立てる式(面積の意味)</th><th>③ 積分後</th><th>答え</th></tr>
+<tr><td>締切堤</td><td>Q = −kz dz/dx<br>(断面 z×1。x 方向に水位が下がるので −)</td><td>Qx = −kz²/2 + C</td><td><b>Q = k(H₁²−H₂²)/(2B)</b></td></tr>
+<tr><td>重力井戸</td><td>Q = 2πrkh dh/dr<br>(円筒面 2πr × 高さ h)</td><td>Q ln r = πkh² + C</td><td><b>Q = πk(h₂²−h₁²)/ln(r₂/r₁)</b></td></tr>
+<tr><td>掘り抜き井戸</td><td>Q = 2πrkD dh/dr<br>(円筒面 2πr × 帯水層厚 D、一定)</td><td>Q ln r = 2πkDh + C</td><td><b>Q = 2πkD(h₂−h₁)/ln(r₂/r₁)</b></td></tr>
+<tr><td>堤体の近似解</td><td>Q = kz dz/dx、dz/dx = tanβ、z = λsinβ<br>→ Q = kλ sinβ tanβ</td><td>Qx = kz²/2 + C</td><td><b>λ = l/cosβ − √(l²/cos²β − H²/sin²β)</b><br><b>Q = kλ sinβ tanβ</b></td></tr>
+</table>
+<div class="a">揚水試験で k を聞かれたら、答えの式を k について解く(重力井戸:k = Q ln(r₂/r₁)/{π(h₂²−h₁²)}、掘り抜き:k = Q ln(r₂/r₁)/{2πD(h₂−h₁)})。</div>
+
+<h2>近似解の境界値(ここだけ覚える)</h2>
+<div class="a">x = l で z = H → Ql = kH²/2 + C …(4)<br>浸出点 x = λcosβ、z = λsinβ → C = kλ²sin²β/2 …(6)<br>(4)に入れて整理 → λ² − (2l/cosβ)λ + H²/sin²β = 0 → <b>λ &lt; l なので − の解</b></div>
+
+<h2>フローネット</h2>
+<div class="a"><b>Q = k × (H/Nd) × Nf</b>  Nf = 流路の数、Nd = 水頭が下がる区切りの数(分母)<br>例:k = 2.00×10⁻⁵ m/s、H = 30 m、Nf = 3、Nd = 10 → 1.8×10⁻⁴ m³/s × 86400 = 15.5 m³/day/m</div>
+
+<h2>落とし穴</h2>
+<div class="a">・積分の <b>+C</b> を忘れない ・<b>ln</b>(自然対数)を使う ・重力井戸は <b>h²</b>、掘り抜きは <b>h</b> ・「1日当たり」は <b>×86400</b> ・2:1 の法面は tanβ = 1/2、sinβ = 1/√5、cosβ = 2/√5</div>
+
+<h1 class="pb">浸透流 計算練習(授業内レポート型)</h1>
 <div class="meta">範囲:重力井戸・掘り抜き井戸・締切堤・堤体のフローネットと近似解 / 時間40分 / 導出は「式を立てる → 変数分離 → 積分(+C)→ 境界条件2つ → 引き算」の順で</div>
 
 <h2>A. 導出(白紙から書く)</h2>
